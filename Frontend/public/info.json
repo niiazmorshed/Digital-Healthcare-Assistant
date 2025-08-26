@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "name": "Executive Office Chair",
+    "description": "Ergonomic leather office chair with adjustable height and lumbar support",
+    "price": 199.99,
+    "image": "https://i.ibb.co/0JNQMDH/s-o-c-i-a-l-c-u-t-1-RT4tx-DDAb-M-unsplash.jpg",
+    "category": "Office",
+    "stock": 10
+  },
+  {
+    "id": 2,
+    "name": "Recliner Chair",
+    "description": "Comfortable fabric recliner chair with adjustable backrest",
+    "price": 299.99,
+    "image": "https://i.ibb.co/mBpMmrq/andres-jasso-ssbgw3c-Kd-Xg-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 5
+  },
+  {
+    "id": 3,
+    "name": "Dining Chair Set",
+    "description": "Set of 4 wooden dining chairs with cushioned seats",
+    "price": 249.99,
+    "image": "https://i.ibb.co/dg5SHBq/k-f-yd-Utk1cr-HTE-unsplash.jpg",
+    "category": "Dining Room",
+    "stock": 15
+  },
+  {
+    "id": 4,
+    "name": "Outdoor Folding Chair",
+    "description": "Lightweight foldable chair with durable frame, ideal for outdoor use",
+    "price": 49.99,
+    "image": "https://i.ibb.co/Vqg9k45/deni-mular.jpg",
+    "category": "Outdoor",
+    "stock": 30
+  },
+  {
+    "id": 5,
+    "name": "Rocking Chair",
+    "description": "Classic wooden rocking chair with cushioned backrest",
+    "price": 179.99,
+    "image": "https://i.ibb.co/C9HSxzz/jennifer-chen-CXV0-EVK8-QSU-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 7
+  },
+  {
+    "id": 6,
+    "name": "Bar Stool",
+    "description": "Set of 2 adjustable height bar stools with metal frame and footrest",
+    "price": 99.99,
+    "image": "https://i.ibb.co/KyT0rJw/jahanzeb-ahsan-HQZ59q4g-SME-unsplash.jpg",
+    "category": "Kitchen",
+    "stock": 20
+  },
+  {
+    "id": 7,
+    "name": "Gaming Chair",
+    "description": "High-back gaming chair with ergonomic design and adjustable armrests",
+    "price": 159.99,
+    "image": "https://i.ibb.co/3McddfR/max-andrey-Tl-RQin0iwj-E-unsplash.jpg",
+    "category": "Office",
+    "stock": 12
+  },
+  {
+    "id": 8,
+    "name": "Accent Chair",
+    "description": "Stylish accent chair with velvet upholstery and wooden legs",
+    "price": 129.99,
+    "image": "https://i.ibb.co/9W65Qhn/sam-moghadam-khamseh-kvmds-Tr-GOBM-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 18
+  },
+  {
+    "id": 9,
+    "name": "Bean Bag Chair",
+    "description": "Soft and comfortable bean bag chair, ideal for lounging",
+    "price": 89.99,
+    "image": "https://i.ibb.co/ngyMRT2/clay-banks-Kdmx7-BVKf-BI-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 25
+  },
+  {
+    "id": 10,
+    "name": "Swivel Chair",
+    "description": "360-degree swivel chair with padded seat and back",
+    "price": 139.99,
+    "image": "https://i.ibb.co/Y7x4x9f/vincent-botta-J41ff-LK-OSM-unsplash.jpg",
+    "category": "Office",
+    "stock": 8
+  },
+  {
+    "id": 11,
+    "name": "Lounge Chair",
+    "description": "Elegant lounge chair with cushioned seat and reclined backrest",
+    "price": 249.99,
+    "image": "https://i.ibb.co.com/WGWrtSj/mitch-moondae-z-XFtsdi9d-Ic-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 6
+  },
+  {
+    "id": 12,
+    "name": "Plastic Stackable Chair",
+    "description": "Durable plastic chair, stackable for easy storage",
+    "price": 29.99,
+    "image": "https://i.ibb.co.com/Fgsy42b/declan-sun-PUj-LLUj-Hu-OQ-unsplash.jpg",
+    "category": "Outdoor",
+    "stock": 50
+  },
+  {
+    "id": 13,
+    "name": "Wingback Chair",
+    "description": "Traditional wingback chair with fabric upholstery and wooden legs",
+    "price": 199.99,
+    "image": "https://i.ibb.co.com/gMb0GWY/annie-spratt-t-J8x4o-CQ5j-E-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 9
+  },
+  {
+    "id": 14,
+    "name": "Director's Chair",
+    "description": "Portable director's chair with foldable frame and canvas seat",
+    "price": 79.99,
+    "image": "https://i.ibb.co.com/ByxnmT7/stephanie-klepacki-YT-ku-CI0p-E-unsplash.jpg",
+    "category": "Outdoor",
+    "stock": 22
+  },
+  {
+    "id": 15,
+    "name": "Task Chair",
+    "description": "Comfortable task chair with adjustable height and wheels",
+    "price": 89.99,
+    "image": "https://i.ibb.co.com/jrcM9R6/sarah-dorweiler-7t-Fl-UFGa7-Dk-unsplash.jpg",
+    "category": "Office",
+    "stock": 35
+  },
+  {
+    "id": 16,
+    "name": "Papasan Chair",
+    "description": "Cozy papasan chair with round cushion and rattan frame",
+    "price": 149.99,
+    "image": "https://i.ibb.co.com/589Lwv3/rebalanse-health-devices-u-COv-F2si3-Q-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 4
+  },
+  {
+    "id": 17,
+    "name": "High Chair",
+    "description": "Adjustable high chair for babies and toddlers, easy to clean",
+    "price": 59.99,
+    "image": "https://i.ibb.co.com/hCk6Px9/equilateral-zmh0-R4-Te-IQ-unsplash.jpg",
+    "category": "Kids",
+    "stock": 40
+  },
+  {
+    "id": 18,
+    "name": "Armchair",
+    "description": "Comfy armchair with oversized cushions and wooden frame",
+    "price": 179.99,
+    "image": "https://i.ibb.co.com/g644Ncd/ellery-sterling-4c-Laowk4-L8k-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 14
+  },
+  {
+    "id": 19,
+    "name": "Massage Chair",
+    "description": "Luxury massage chair with multiple massage modes and recline feature",
+    "price": 799.99,
+    "image": "https://i.ibb.co.com/589Lwv3/rebalanse-health-devices-u-COv-F2si3-Q-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 3
+  },
+  {
+    "id": 20,
+    "name": "Chaise Lounge",
+    "description": "Elegant chaise lounge with soft fabric and cushioned seat",
+    "price": 349.99,
+    "image": "https://i.ibb.co.com/6B4NB6d/balint-miko-PGn6qa-Nbo5-E-unsplash.jpg",
+    "category": "Living Room",
+    "stock": 5
+  }
+]
