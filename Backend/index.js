@@ -26,6 +26,7 @@ async function run() {
 
     const doctorsCollection = client.db("HealthcareDB").collection("doctors");
     const appointmentsCollection = client.db("HealthcareDB").collection("appointments");
+    const patientsCollection = client.db("HealthcareDB").collection("patients");
     
     // GET all doctors
     app.get('/api/doctors', async(req, res) => {
@@ -71,21 +72,101 @@ async function run() {
       }
     });
 
-    // POST new appointment
+    // POST new appointment with patient data
     app.post('/api/appointments', async(req, res) => {
       try {
+        const {
+          // Patient data
+          patientName,
+          patientEmail,
+          patientPhone,
+          age,
+          gender,
+          // Appointment data
+          appointmentDate,
+          appointmentTime,
+          symptoms,
+          // Doctor data
+          doctorId,
+          doctorName,
+          doctorSpecialization,
+          doctorDepartment,
+          consultationFee
+        } = req.body;
+
+        // Step 1: Check if patient exists or create new patient
+        let patient = await patientsCollection.findOne({ email: patientEmail });
+        
+        if (!patient) {
+          // Create new patient if doesn't exist
+          const newPatient = {
+            name: patientName,
+            email: patientEmail,
+            phone: patientPhone,
+            age: parseInt(age),
+            gender: gender,
+            registeredDate: new Date(),
+            appointments: [], // Array to store appointment IDs
+            medicalHistory: [],
+            lastUpdated: new Date()
+          };
+          
+          const patientResult = await patientsCollection.insertOne(newPatient);
+          patient = { ...newPatient, _id: patientResult.insertedId };
+        } else {
+          // Update existing patient information
+          await patientsCollection.updateOne(
+            { _id: patient._id },
+            {
+              $set: {
+                name: patientName,
+                phone: patientPhone,
+                age: parseInt(age),
+                gender: gender,
+                lastUpdated: new Date()
+              }
+            }
+          );
+        }
+
+        // Step 2: Create appointment
         const appointmentData = {
-          ...req.body,
-          status: 'pending',
+          patientId: patient._id,
+          patientName: patientName,
+          patientEmail: patientEmail,
+          patientPhone: patientPhone,
+          patientAge: parseInt(age),
+          patientGender: gender,
+          doctorId: new ObjectId(doctorId),
+          doctorName: doctorName,
+          doctorSpecialization: doctorSpecialization,
+          doctorDepartment: doctorDepartment,
+          appointmentDate: appointmentDate,
+          appointmentTime: appointmentTime,
+          symptoms: symptoms,
+          consultationFee: consultationFee,
+          status: 'pending', // pending, confirmed, completed, cancelled
           createdAt: new Date(),
+          updatedAt: new Date()
         };
         
-        const result = await appointmentsCollection.insertOne(appointmentData);
+        const appointmentResult = await appointmentsCollection.insertOne(appointmentData);
+        
+        // Step 3: Update patient document with new appointment ID
+        await patientsCollection.updateOne(
+          { _id: patient._id },
+          {
+            $push: { appointments: appointmentResult.insertedId },
+            $set: { lastAppointmentDate: appointmentDate }
+          }
+        );
         
         res.json({
           success: true,
           message: "Appointment booked successfully",
-          appointmentId: result.insertedId
+          appointmentId: appointmentResult.insertedId,
+          patientId: patient._id,
+          isNewPatient: !patient.email
         });
       } catch (error) {
         res.status(500).json({
@@ -96,7 +177,7 @@ async function run() {
       }
     });
 
-    // GET all appointments (optional - for admin)
+    // GET all appointments
     app.get('/api/appointments', async(req, res) => {
       try {
         const appointments = await appointmentsCollection.find().toArray();
@@ -108,6 +189,145 @@ async function run() {
         res.status(500).json({
           success: false,
           message: "Error fetching appointments",
+          error: error.message
+        });
+      }
+    });
+
+    // GET appointments by patient email
+    app.get('/api/appointments/patient/:email', async(req, res) => {
+      try {
+        const email = req.params.email;
+        const appointments = await appointmentsCollection.find({ patientEmail: email }).toArray();
+        res.json({
+          success: true,
+          appointments: appointments
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Error fetching patient appointments",
+          error: error.message
+        });
+      }
+    });
+
+    // GET all patients
+    app.get('/api/patients', async(req, res) => {
+      try {
+        const patients = await patientsCollection.find().toArray();
+        res.json({
+          success: true,
+          patients: patients
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Error fetching patients",
+          error: error.message
+        });
+      }
+    });
+
+    // GET single patient by email
+    app.get('/api/patients/:email', async(req, res) => {
+      try {
+        const email = req.params.email;
+        const patient = await patientsCollection.findOne({ email: email });
+        
+        if (!patient) {
+          return res.status(404).json({
+            success: false,
+            message: "Patient not found"
+          });
+        }
+        
+        // Get patient's appointments
+        const appointments = await appointmentsCollection.find({ patientEmail: email }).toArray();
+        
+        res.json({
+          success: true,
+          patient: {
+            ...patient,
+            appointmentHistory: appointments
+          }
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Error fetching patient",
+          error: error.message
+        });
+      }
+    });
+
+    // UPDATE appointment status
+    app.patch('/api/appointments/:id/status', async(req, res) => {
+      try {
+        const id = req.params.id;
+        const { status } = req.body;
+        
+        const result = await appointmentsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              status: status,
+              updatedAt: new Date()
+            }
+          }
+        );
+        
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "Appointment not found"
+          });
+        }
+        
+        res.json({
+          success: true,
+          message: "Appointment status updated successfully"
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Error updating appointment",
+          error: error.message
+        });
+      }
+    });
+
+    // DELETE appointment (soft delete - just change status)
+    app.delete('/api/appointments/:id', async(req, res) => {
+      try {
+        const id = req.params.id;
+        
+        const result = await appointmentsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              status: 'cancelled',
+              cancelledAt: new Date(),
+              updatedAt: new Date()
+            }
+          }
+        );
+        
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "Appointment not found"
+          });
+        }
+        
+        res.json({
+          success: true,
+          message: "Appointment cancelled successfully"
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Error cancelling appointment",
           error: error.message
         });
       }
