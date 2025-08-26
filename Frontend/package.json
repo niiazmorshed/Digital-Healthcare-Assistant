@@ -14,7 +14,7 @@
     "@tailwindcss/vite": "^4.1.12",
     "@tanstack/react-query": "^5.55.0",
     "animate.css": "^4.1.1",
-    "axios": "^1.7.7",
+    "axios": "^1.11.0",
     "firebase": "^10.13.1",
     "localforage": "^1.10.0",
     "lottie-react": "^2.4.0",

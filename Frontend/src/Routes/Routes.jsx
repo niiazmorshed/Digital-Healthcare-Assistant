@@ -7,6 +7,7 @@ import Review from "../Our Review/Review";
 import AboutUs from "../About Us/AboutUs";
 import Error from "../Error/Error";
 import Doctors from "../Pages/Doctors/Doctors";
+// import Doctors from "../Pages/Doctors/Doctors";
 
 const router = createBrowserRouter([
   {
@@ -35,9 +36,9 @@ const router = createBrowserRouter([
         element: <AboutUs />,
       },
       {
-        path: "/doctors",
-        element: <Doctors />,
-      },
+        path : "/doctors",
+        element : <Doctors></Doctors>
+      }
     ],
   },
 ]);

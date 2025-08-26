@@ -2,20 +2,397 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Doctors Container */
+.doctors-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.doctors-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.doctors-header h1 {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.doctors-header p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Doctors Grid */
+.doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+/* Doctor Card */
+.doctor-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.doctor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+}
+
+.doctor-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.doctor-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doctor-info {
+  padding: 1.5rem;
+}
+
+.doctor-info h3 {
+  color: #2c3e50;
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.specialization {
+  color: #3498db;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.qualification {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.doctor-details {
+  background: #f8f9fa;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.doctor-details p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.doctor-details .icon {
+  margin-right: 0.5rem;
+}
+
+.availability {
+  margin: 1rem 0;
+}
+
+.availability strong {
+  color: #2c3e50;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.available-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.day-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+}
+
+.time-slots {
+  margin: 1rem 0;
+}
+
+.time-slots strong {
+  color: #2c3e50;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.time-slots p {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.consultation-fee {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  background: #f0f8ff;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.fee-amount {
+  color: #27ae60;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.book-appointment-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.book-appointment-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+}
+
+/* Appointment Modal */
+.appointment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.appointment-form-container {
+  background: white;
+  border-radius: 12px;
+  max-width: 650px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.form-header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.close-btn:hover {
+  color: #e74c3c;
+}
+
+.doctor-summary {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-left: 4px solid #3498db;
+}
+
+.doctor-summary p {
+  margin: 0.3rem 0;
+  color: #555;
+}
+
+.appointment-form-container form {
+  padding: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submit-btn,
+.cancel-btn {
+  flex: 1;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.submit-btn {
+  background: #27ae60;
+  color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #229954;
+}
+
+.submit-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.cancel-btn:hover {
+  background: #bdc3c7;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .doctors-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .doctors-header h1 {
+    font-size: 2rem;
+  }
+}
+
 .banner1 {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-      url("https://i.ibb.co.com/pfMrcGG/Rectangle-5.png");
-    background-size: cover;
-    background-position: center;
-    max-width: inherit;
-    min-height: 700px;
-    /* min-height: 550px; */
-  }
-  
-  .footer {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-      url("https://i.ibb.co/PDtHqdF/peter-herrmann-KEUz-DBVqd8s-unsplash.jpg");
-    background-size: cover;
-    background-position: center;
-    min-height: 350px;
-  }
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+    url("https://i.ibb.co.com/pfMrcGG/Rectangle-5.png");
+  background-size: cover;
+  background-position: center;
+  max-width: inherit;
+  min-height: 700px;
+  /* min-height: 550px; */
+}
+
+.footer {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+    url("https://i.ibb.co/PDtHqdF/peter-herrmann-KEUz-DBVqd8s-unsplash.jpg");
+  background-size: cover;
+  background-position: center;
+  min-height: 350px;
+}
