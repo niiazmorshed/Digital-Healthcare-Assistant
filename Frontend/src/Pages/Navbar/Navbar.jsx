@@ -1,17 +1,144 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import "./nav.css";
 // import toast from "react-hot-toast";
-import UseAuth from "../../Hooks/UseAuth";
-import Dark from "../../Dark Mode/Dark";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import Dark from "../../Dark Mode/Dark";
+import UseAuth from "../../Hooks/UseAuth";
 
 const Navbar = () => {
   const { user, logOut } = UseAuth();
+  const navigate = useNavigate();
+  const [role, setRole] = useState(null);
+  const [resolving, setResolving] = useState(false);
+
+  // Cache key per user for role persistence
+  const roleStorageKey = useMemo(() => (user?.email ? `role:${user.email}` : null), [user?.email]);
+
+  // Resolve color classes and icon per role
+  const roleUi = useMemo(() => {
+    if (role === "admin") return { badge: "badge-error", icon: "🛡️" };
+    if (role === "doctor") return { badge: "badge-info", icon: "🩺" };
+    if (role === "patient") return { badge: "badge-success", icon: "🧑‍⚕️" };
+    return { badge: "badge-ghost", icon: "❓" };
+  }, [role]);
+
+  const fetchIdToken = useCallback(async () => {
+    try {
+      if (!user) return null;
+      const token = await user.getIdToken?.();
+      return token || null;
+    } catch {
+      return null;
+    }
+  }, [user]);
+
+  const fetchRole = useCallback(async () => {
+    // Try cache first
+    if (roleStorageKey) {
+      const cached = localStorage.getItem(roleStorageKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed?.role) return parsed.role;
+        } catch {
+          console.debug("Ignoring invalid cached role entry");
+        }
+      }
+    }
+
+    const token = await fetchIdToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const headers = { Authorization: `Bearer ${token}` };
+    // 1) Try profile endpoint
+    try {
+      const res = await fetch(`/api/auth/profile`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.role) return data.role;
+      }
+    } catch {
+      console.debug("Profile role fetch failed; trying role-check endpoints");
+    }
+
+    // 2) Fallback to role check endpoints by email
+    const email = user?.email;
+    if (!email) throw new Error("Missing email");
+    try {
+      const [isAdminRes, isDoctorRes, isPatientRes] = await Promise.all([
+        fetch(`/api/users/check-admin/${encodeURIComponent(email)}`, { headers }),
+        fetch(`/api/users/check-doctor/${encodeURIComponent(email)}`, { headers }),
+        fetch(`/api/users/check-patient/${encodeURIComponent(email)}`, { headers }),
+      ]);
+      if (isAdminRes.ok) {
+        const d = await isAdminRes.json();
+        if (d?.isAdmin || d?.role === "admin") return "admin";
+      }
+      if (isDoctorRes.ok) {
+        const d = await isDoctorRes.json();
+        if (d?.isDoctor || d?.role === "doctor") return "doctor";
+      }
+      if (isPatientRes.ok) {
+        const d = await isPatientRes.json();
+        if (d?.isPatient || d?.role === "patient") return "patient";
+      }
+    } catch {
+      console.debug("Role check endpoints failed");
+    }
+    throw new Error("Unable to determine role");
+  }, [fetchIdToken, roleStorageKey, user?.email]);
+
+  // Initialize role from cache or API when user changes
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setRole(null);
+      return;
+    }
+    (async () => {
+      try {
+        const r = await fetchRole();
+        if (!cancelled) {
+          setRole(r);
+          if (roleStorageKey) {
+            localStorage.setItem(roleStorageKey, JSON.stringify({ role: r, email: user.email }));
+          }
+        }
+      } catch {
+        if (!cancelled) setRole(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, fetchRole, roleStorageKey]);
+
+  const handleGoToDashboard = useCallback(async () => {
+    try {
+      setResolving(true);
+      const token = await fetchIdToken();
+      if (!token) {
+        localStorage.setItem("intended_route", "/dashboard");
+        navigate("/login");
+        return;
+      }
+      // Navigate to general dashboard - the route will handle redirection based on role
+      navigate("/dashboard");
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not open dashboard. Please try again.");
+      navigate("/dashboard");
+    } finally {
+      setResolving(false);
+    }
+  }, [fetchIdToken, navigate]);
 
   const handleLogOut = () => {
     logOut()
       .then(() => {
         toast.success("Logout Successfully");
+        if (roleStorageKey) localStorage.removeItem(roleStorageKey);
       })
       .catch((error) => {
         console.error(error);
@@ -111,19 +238,35 @@ const Navbar = () => {
           {user ? (
             <ul
               tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-64"
             >
-              <li>
-                <a className="justify-between">{user?.email}</a>
+              <li className="px-2 py-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold">{user?.displayName || user?.email}</div>
+                    <div className="text-xs opacity-70">{user?.email}</div>
+                  </div>
+                  <div>
+                    <span className={`badge ${roleUi.badge}`}>{role ? `${roleUi.icon} ${role}` : "Loading"}</span>
+                  </div>
+                </div>
               </li>
-
-              {user ? (
-                <li>
-                  <button onClick={handleLogOut}>Logout</button>
-                </li>
-              ) : (
-                ""
-              )}
+              <div className="divider my-1"></div>
+              <li>
+                <button onClick={handleGoToDashboard} disabled={resolving}>
+                  {resolving ? "Opening..." : "Dashboard"}
+                </button>
+              </li>
+              <li>
+                <NavLink to="/profile">My Profile</NavLink>
+              </li>
+              <li>
+                <NavLink to="/settings">Settings</NavLink>
+              </li>
+              <div className="divider my-1"></div>
+              <li>
+                <button onClick={handleLogOut}>Logout</button>
+              </li>
             </ul>
           ) : (
             ""

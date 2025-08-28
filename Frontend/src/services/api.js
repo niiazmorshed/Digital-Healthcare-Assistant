@@ -1,0 +1,132 @@
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Create axios instance with base configuration
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// User API functions
+export const userAPI = {
+  // Register new user
+  register: async (userData) => {
+    try {
+      const response = await apiClient.post('/users/register', userData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Login user
+  login: async (uid, email) => {
+    try {
+      const response = await apiClient.post('/users/login', { uid, email });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get user by UID
+  getUserByUID: async (uid) => {
+    try {
+      const response = await apiClient.get(`/users/${uid}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update user profile
+  updateProfile: async (uid, updateData) => {
+    try {
+      const response = await apiClient.put(`/users/${uid}`, updateData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Appointment API functions
+export const appointmentAPI = {
+  // Create appointment (Patient side)
+  create: async (appointmentData) => {
+    try {
+      const response = await apiClient.post('/appointments', appointmentData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get doctor's appointments (Doctor side)
+  getDoctorAppointments: async (doctorEmail) => {
+    try {
+      const response = await apiClient.get(`/appointments/doctor/${doctorEmail}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get patient's appointments (Patient side)
+  getPatientAppointments: async (patientId) => {
+    try {
+      const response = await apiClient.get(`/appointments/patient/${patientId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update appointment status (Doctor side)
+  updateStatus: async (appointmentId, status) => {
+    try {
+      const response = await apiClient.put(`/appointments/${appointmentId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all appointments (Admin side)
+  getAll: async () => {
+    try {
+      const response = await apiClient.get('/appointments');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Doctor API functions
+export const doctorAPI = {
+  // Get all doctors
+  getAll: async () => {
+    try {
+      const response = await apiClient.get('/doctors');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get doctor by ID
+  getById: async (doctorId) => {
+    try {
+      const response = await apiClient.get(`/doctors/${doctorId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+export default apiClient;

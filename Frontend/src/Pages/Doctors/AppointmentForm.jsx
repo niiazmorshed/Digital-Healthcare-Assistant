@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import UseAuth from '../../Hooks/UseAuth';
+import { appointmentAPI } from '../../services/api';
 
 const AppointmentForm = ({ doctor, onClose }) => {
+    const { user, userData } = UseAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         patientName: '',
@@ -23,30 +25,67 @@ const AppointmentForm = ({ doctor, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         
+        // Check if user is authenticated
+        if (!user) {
+            alert("Please login to book an appointment");
+            return;
+        }
+
+        // Check if user is a patient
+        if (userData?.role !== 'patient') {
+            alert("Only patients can book appointments");
+            return;
+        }
+        
+        setLoading(true);
+
         try {
-            // Handle fee as object - IMPORTANT: Check if it's already an object or needs conversion
-            const fee = doctor.consultationFee || { amount: 50, currency: 'BDT' };
-            
+            // Prepare appointment data according to your backend schema
             const appointmentData = {
-                ...formData,
-                doctorId: doctor._id,
-                doctorName: doctor.name,
-                doctorSpecialization: doctor.specialization || 'General',
-                doctorDepartment: doctor.department || 'General Medicine',
-                consultationFee: fee // Store the entire fee object
+                patientId: user.uid, // Firebase UID
+                doctorEmail: doctor.contactInfo?.email || doctor.email, // Doctor's email
+                patientName: formData.patientName,
+                patientEmail: formData.patientEmail,
+                patientPhone: formData.patientPhone,
+                patientAge: parseInt(formData.age),
+                patientGender: formData.gender,
+                appointmentDate: formData.appointmentDate,
+                appointmentTime: formData.appointmentTime,
+                symptoms: formData.symptoms
             };
 
-            const response = await axios.post('http://localhost:5000/api/appointments', appointmentData);
-            
-            if (response.data.success) {
-                alert('Appointment booked successfully!');
+            const response = await appointmentAPI.create(appointmentData);
+
+            if (response.success) {
+                const { appointmentId } = response;
+
+                // Enhanced success message
+                const successMessage = `
+✅ Appointment Booked Successfully!
+
+📋 Appointment ID: ${appointmentId ? appointmentId.toString().slice(-6).toUpperCase() : 'N/A'}
+👨‍⚕️ Doctor: ${doctor.name}
+📧 Confirmation sent to: ${formData.patientEmail}
+📅 Date: ${formData.appointmentDate}
+🕐 Time: ${formData.appointmentTime}
+
+You will receive a confirmation email shortly.`;
+
+                alert(successMessage);
                 onClose();
             }
         } catch (error) {
-            alert('Error booking appointment. Please try again.');
-            console.error('Error:', error);
+            if (error.response?.status === 400) {
+                alert("❌ Invalid appointment data. Please check your information.");
+            } else if (error.response?.status === 409) {
+                alert("❌ Appointment slot already booked. Please choose another time.");
+            } else if (error.response?.status === 401) {
+                alert("❌ Authentication failed. Please login again.");
+            } else {
+                alert("❌ Error booking appointment. Please try again.");
+            }
+            console.error("Error:", error);
         } finally {
             setLoading(false);
         }
@@ -61,7 +100,7 @@ const AppointmentForm = ({ doctor, onClose }) => {
     const fee = doctor?.consultationFee || { amount: 50, currency: 'BDT' };
     const feeDisplay = typeof fee === 'object' 
         ? `${fee.currency === 'BDT' ? '৳' : '$'}${fee.amount}`
-        : `৳${fee}`; // Fallback if fee is somehow not an object
+        : `৳${fee}`;
 
     return (
         <div style={{
@@ -226,9 +265,9 @@ const AppointmentForm = ({ doctor, onClose }) => {
                                 }}
                             >
                                 <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
                     </div>
@@ -271,20 +310,14 @@ const AppointmentForm = ({ doctor, onClose }) => {
                                 }}
                             >
                                 <option value="">Select Time</option>
-                                <option value="09:00">09:00 AM</option>
-                                <option value="09:30">09:30 AM</option>
-                                <option value="10:00">10:00 AM</option>
-                                <option value="10:30">10:30 AM</option>
-                                <option value="11:00">11:00 AM</option>
-                                <option value="11:30">11:30 AM</option>
-                                <option value="12:00">12:00 PM</option>
-                                <option value="14:00">02:00 PM</option>
-                                <option value="14:30">02:30 PM</option>
-                                <option value="15:00">03:00 PM</option>
-                                <option value="15:30">03:30 PM</option>
-                                <option value="16:00">04:00 PM</option>
-                                <option value="16:30">04:30 PM</option>
-                                <option value="17:00">05:00 PM</option>
+                                <option value="09:00-10:00">09:00-10:00</option>
+                                <option value="10:00-11:00">10:00-11:00</option>
+                                <option value="11:00-12:00">11:00-12:00</option>
+                                <option value="12:00-13:00">12:00-13:00</option>
+                                <option value="14:00-15:00">14:00-15:00</option>
+                                <option value="15:00-16:00">15:00-16:00</option>
+                                <option value="16:00-17:00">16:00-17:00</option>
+                                <option value="17:00-18:00">17:00-18:00</option>
                             </select>
                         </div>
                     </div>
