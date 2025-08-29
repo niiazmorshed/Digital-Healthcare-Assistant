@@ -58,6 +58,14 @@ const Dashboard = () => {
         <aside className="md:col-span-3 lg:col-span-2 bg-base-200 rounded-xl p-4 h-max sticky top-24">
           <h2 className="text-xl font-bold mb-4">Dashboard</h2>
           <nav className="flex flex-col gap-2">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `btn btn-sm justify-start ${isActive ? 'btn-primary' : 'btn-ghost'}`
+              }
+            >
+              🏠 Home
+            </NavLink>
             {userData?.role === 'patient' && (
               <NavLink
                 to="/dashboard/patient"

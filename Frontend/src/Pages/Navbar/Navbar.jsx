@@ -142,39 +142,41 @@ const Navbar = () => {
       })
       .catch((error) => {
         console.error(error);
+        toast.error("Logout failed. Please try again.");
       });
   };
 
+  const linkClass = ({ isActive }) =>
+    `text-sm md:text-base font-semibold transition-colors px-2 ${
+      isActive ? 'text-blue-500' : 'text-white'
+    } hover:text-blue-400`;
+
   const navLinks = (
     <>
-      <NavLink to="/">
-        {" "}
+      <NavLink to="/" className={linkClass}>
         <li>
-          <a className="text-white text-base font-semibold">Home</a>
+          <a>Home</a>
         </li>
       </NavLink>
-      <NavLink to="/doctors">
-        {" "}
+      <NavLink to="/doctors" className={linkClass}>
         <li>
-          <a className="text-white text-base font-semibold">Doctors</a>
+          <a>Doctors</a>
         </li>
       </NavLink>
-      <NavLink to="/review">
-        {" "}
+      <NavLink to="/review" className={linkClass}>
         <li>
-          <a className="text-white text-base font-semibold">Review</a>
+          <a>Review</a>
         </li>
       </NavLink>
-      <NavLink to="/aboutus">
-        {" "}
+      <NavLink to="/aboutus" className={linkClass}>
         <li>
-          <a className="text-white text-base font-semibold">About Us</a>
+          <a>About Us</a>
         </li>
       </NavLink>
     </>
   );
   return (
-    <div className="navbar fixed bg-gray-800 z-10 top-0">
+    <div className="navbar fixed bg-gray-800 z-10 top-0 shadow-md">
       {/* fixed */}
       <div className="navbar-start">
         <div className="dropdown">
@@ -202,17 +204,17 @@ const Navbar = () => {
           </ul>
         </div>
         <Link to="/">
-          <h1 className="text-5xl font-bold">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             <span className="text-white">Digital</span>{" "}
             <span className="text-blue-500">Healthcare</span>
           </h1>
         </Link>
       </div>
       <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1">{navLinks}</ul>
+        <ul className="menu menu-horizontal px-1 gap-2">{navLinks}</ul>
       </div>
 
-      <div className="navbar-end sm: pr-12 md:pr-2">
+      <div className="navbar-end sm: pr-12 md:pr-2 gap-2">
         <Dark></Dark>
 
         <div className="dropdown dropdown-end">
@@ -224,31 +226,27 @@ const Navbar = () => {
             {user ? (
               <div className="w-10 rounded-full">
                 <img
-                  alt="Tailwind CSS Navbar component"
+                  alt="User avatar"
                   src="https://i.ibb.co.com/4PffJnR/photo-2023-02-28-19-26-32-2.jpg"
                 />
               </div>
             ) : (
-              <NavLink to="/login">
-                {user ? "" : <a className="btn">Login</a>}
-              </NavLink>
+              <NavLink to="/login">{user ? "" : <a className="btn btn-sm">Login</a>}</NavLink>
             )}
           </div>
 
           {user ? (
             <ul
               tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-64"
+              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-56"
             >
               <li className="px-2 py-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-semibold">{user?.displayName || user?.email}</div>
+                    <div className="font-semibold text-sm md:text-base">{user?.displayName || user?.email}</div>
                     <div className="text-xs opacity-70">{user?.email}</div>
                   </div>
-                  <div>
-                    <span className={`badge ${roleUi.badge}`}>{role ? `${roleUi.icon} ${role}` : "Loading"}</span>
-                  </div>
+                  {role ? <span className={`badge ${roleUi.badge}`}>{`${roleUi.icon} ${role}`}</span> : null}
                 </div>
               </li>
               <div className="divider my-1"></div>
@@ -256,12 +254,6 @@ const Navbar = () => {
                 <button onClick={handleGoToDashboard} disabled={resolving}>
                   {resolving ? "Opening..." : "Dashboard"}
                 </button>
-              </li>
-              <li>
-                <NavLink to="/profile">My Profile</NavLink>
-              </li>
-              <li>
-                <NavLink to="/settings">Settings</NavLink>
               </li>
               <div className="divider my-1"></div>
               <li>

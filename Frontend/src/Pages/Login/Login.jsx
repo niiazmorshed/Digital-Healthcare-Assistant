@@ -22,6 +22,11 @@ const Login = () => {
       const mail = form.get("email");
       const pass = form.get("password");
 
+      if (!mail || !pass) {
+        toast.error("Please enter email and password.");
+        return;
+      }
+
       // Step 1: Login with Firebase Authentication
       const userCredential = await logIn(mail, pass);
       const firebaseUser = userCredential.user;
@@ -31,28 +36,20 @@ const Login = () => {
 
       // Success
       e.target.reset();
-      toast.success("Login Successful! Welcome back!");
+      toast.success("Login successful. Welcome back!");
       navigate(location?.state ? location.state : "/");
 
     } catch (error) {
       console.error("Login error:", error);
-      
-      // Handle specific error cases
-      if (error.code === "auth/user-not-found") {
-        toast.error("User not found. Please register first.");
-      } else if (error.code === "auth/wrong-password") {
-        toast.error("Incorrect password. Please try again.");
-      } else if (error.code === "auth/invalid-email") {
-        toast.error("Invalid email address. Please enter a valid email.");
-      } else if (error.code === "auth/too-many-requests") {
-        toast.error("Too many failed attempts. Please try again later.");
-      } else if (error.response?.status === 404) {
-        toast.error("User not found in our database. Please register first.");
-      } else if (error.response?.status === 400) {
-        toast.error("Invalid login data. Please check your information.");
-      } else {
-        toast.error("Login failed. Please try again later.");
-      }
+      const msg =
+        error.code === "auth/user-not-found" ? "User not found. Please register first." :
+        error.code === "auth/wrong-password" ? "Incorrect password. Please try again." :
+        error.code === "auth/invalid-email" ? "Invalid email. Please enter a valid email." :
+        error.code === "auth/too-many-requests" ? "Too many attempts. Try again later." :
+        error.response?.status === 404 ? "User not found in database. Please register." :
+        error.response?.status === 400 ? "Invalid login data." :
+        "Login failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -60,22 +57,17 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    toast.success("Please Wait");
+    toast.loading("Signing in with Google...", { id: "oauth" });
 
     try {
-      // Step 1: Login with Google
       const userCredential = await googleSignIn();
       const firebaseUser = userCredential.user;
-
-      // Step 2: Handle user authentication with backend (login or register)
       await handleUserAuth(firebaseUser);
-
-      toast.success("Login with Google Successful!");
+      toast.success("Google sign-in successful!", { id: "oauth" });
       navigate(location?.state ? location.state : "/");
-
     } catch (error) {
       console.error("Google sign-in error:", error);
-      toast.error("Google sign-in failed. Please try again.");
+      toast.error("Google sign-in failed. Please try again.", { id: "oauth" });
     } finally {
       setLoading(false);
     }
@@ -83,22 +75,17 @@ const Login = () => {
 
   const handleGitHubSignIn = async () => {
     setLoading(true);
-    toast.success("Please Wait");
+    toast.loading("Signing in with GitHub...", { id: "oauth" });
 
     try {
-      // Step 1: Login with GitHub
       const userCredential = await gitHubSignIn();
       const firebaseUser = userCredential.user;
-
-      // Step 2: Handle user authentication with backend (login or register)
       await handleUserAuth(firebaseUser);
-
-      toast.success("Login with GitHub Successful!");
+      toast.success("GitHub sign-in successful!", { id: "oauth" });
       navigate(location?.state ? location.state : "/");
-
     } catch (error) {
       console.error("GitHub sign-in error:", error);
-      toast.error("GitHub sign-in failed. Please try again.");
+      toast.error("GitHub sign-in failed. Please try again.", { id: "oauth" });
     } finally {
       setLoading(false);
     }

@@ -26,13 +26,13 @@ const Register = () => {
 
       // Checking The Password requirements
       if (pass.length < 6) {
-        toast.error("Password Can not be less then 6 charecter", {});
+        toast.error("Password must be at least 6 characters.");
         return;
       } else if (!/[A-Z]/.test(pass)) {
-        toast.error("Password must be one UpperCase Charecter", {});
+        toast.error("Password must include an uppercase letter.");
         return;
       } else if (!/[a-z]/.test(pass)) {
-        toast.error("Password must be one LowerCase Charecter", {});
+        toast.error("Password must include a lowercase letter.");
         return;
       }
 
@@ -51,31 +51,22 @@ const Register = () => {
 
       // Success
       e.target.reset();
-      
-      // Get welcome message based on role
       const welcomeMessage = userData?.role === 'doctor' 
-        ? "Welcome Dr. " + firstName + "! Registration Successful!"
-        : "Welcome " + firstName + "! Registration Successful!";
+        ? `Welcome Dr. ${firstName}! Registration successful!`
+        : `Welcome ${firstName}! Registration successful!`;
       toast.success(welcomeMessage);
       navigate("/");
 
     } catch (error) {
       console.error("Registration error:", error);
-      
-      // Handle specific error cases
-      if (error.code === "auth/email-already-in-use") {
-        toast.error("This email is already registered. Please try logging in instead.");
-      } else if (error.code === "auth/weak-password") {
-        toast.error("Password is too weak. Please choose a stronger password.");
-      } else if (error.code === "auth/invalid-email") {
-        toast.error("Invalid email address. Please enter a valid email.");
-      } else if (error.response?.status === 409) {
-        toast.error("User already exists in our database.");
-      } else if (error.response?.status === 400) {
-        toast.error("Invalid registration data. Please check your information.");
-      } else {
-        toast.error("Registration failed. Please try again later.");
-      }
+      const msg =
+        error.code === "auth/email-already-in-use" ? "This email is already registered. Please log in." :
+        error.code === "auth/weak-password" ? "Password is too weak." :
+        error.code === "auth/invalid-email" ? "Invalid email address." :
+        error.response?.status === 409 ? "User already exists in our database." :
+        error.response?.status === 400 ? "Invalid registration data." :
+        "Registration failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

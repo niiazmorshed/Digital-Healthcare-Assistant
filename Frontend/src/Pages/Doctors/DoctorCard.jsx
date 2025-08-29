@@ -10,23 +10,32 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
         department = 'General Medicine',
         rating = 4.5,
         image = '',
+        bio = 'Dedicated healthcare professional providing compassionate, evidence-based care.',
         availableDays = [],
         consultationFee = { amount: 50, currency: 'USD' }, // Handle as object
         availableTimeSlots = []
     } = doctor || {};
 
+    const currencySymbol = consultationFee.currency === 'BDT' ? '৳' : '$';
+
     return (
         <div style={{
             background: 'white',
-            borderRadius: '10px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
             overflow: 'hidden',
-            transition: 'transform 0.3s'
-        }}>
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            width: '100%',
+            maxWidth: '360px',
+            margin: '0 auto'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow='0 10px 26px rgba(0,0,0,0.12)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.08)'; }}
+        >
             <div style={{
                 width: '100%',
-                height: '200px',
-                background: '#f0f0f0',
+                height: '160px',
+                background: '#f0f4f8',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -38,52 +47,56 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
                             e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div style="font-size: 48px;">👨‍⚕️</div>';
+                            e.target.parentElement.innerHTML = '<div style="font-size: 42px;">👨‍⚕️</div>';
                         }}
                     />
                 ) : (
-                    <div style={{ fontSize: '48px' }}>👨‍⚕️</div>
+                    <div style={{ fontSize: '42px' }}>👨‍⚕️</div>
                 )}
             </div>
             
-            <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ color: '#2c3e50', marginBottom: '0.5rem' }}>{name}</h3>
-                <p style={{ color: '#3498db', fontWeight: '600', marginBottom: '0.5rem' }}>
-                    {specialization}
-                </p>
+            <div style={{ padding: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <h3 style={{ color: '#1f2937', marginBottom: '0.25rem', fontSize: '1.1rem', fontWeight: 700 }}>{name}</h3>
+                    <span style={{ color: '#10b981', fontWeight: 700 }}>{currencySymbol}{consultationFee.amount || 50}</span>
+                </div>
+                <p style={{ color: '#2563eb', fontWeight: 600, marginBottom: '0.25rem' }}>{specialization}</p>
                 {qualification && (
-                    <p style={{ color: '#7f8c8d', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                        {qualification}
-                    </p>
+                    <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{qualification}</p>
+                )}
+
+                {/* Full bio */}
+                {bio && (
+                    <p style={{ color: '#374151', fontSize: '0.9rem', lineHeight: 1.4, marginBottom: '0.75rem' }}>{bio}</p>
                 )}
                 
-                <div style={{ background: '#f8f9fa', padding: '0.8rem', borderRadius: '8px', margin: '1rem 0' }}>
+                <div style={{ background: '#f9fafb', padding: '0.6rem 0.75rem', borderRadius: '10px', margin: '0.6rem 0' }}>
                     {experience > 0 && (
-                        <p style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
                             <span>🏥</span> {experience} years experience
                         </p>
                     )}
                     {department && (
-                        <p style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
                             <span>🏢</span> {department}
                         </p>
                     )}
-                    <p style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
-                        <span>⭐</span> Rating: {rating}/5
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
+                        <span>⭐</span> {rating}/5
                     </p>
                 </div>
 
                 {availableDays && availableDays.length > 0 && (
-                    <div style={{ margin: '1rem 0' }}>
-                        <strong>Available Days:</strong>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <div style={{ margin: '0.5rem 0' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>Available Days:</strong>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.35rem' }}>
                             {availableDays.map((day, index) => (
                                 <span key={index} style={{
-                                    background: '#e3f2fd',
-                                    color: '#1976d2',
-                                    padding: '0.3rem 0.8rem',
-                                    borderRadius: '15px',
-                                    fontSize: '0.85rem'
+                                    background: '#e0f2fe',
+                                    color: '#0369a1',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.75rem'
                                 }}>
                                     {day}
                                 </span>
@@ -93,46 +106,29 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
                 )}
 
                 {availableTimeSlots && availableTimeSlots.length > 0 && (
-                    <div style={{ margin: '1rem 0' }}>
-                        <strong>Time Slots:</strong>
-                        <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
+                    <div style={{ margin: '0.5rem 0' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>Time Slots:</strong>
+                        <p style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                             {availableTimeSlots.join(', ')}
                         </p>
                     </div>
                 )}
 
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.8rem',
-                    background: '#f0f8ff',
-                    borderRadius: '8px',
-                    margin: '1rem 0'
-                }}>
-                    <strong>Consultation Fee:</strong>
-                    <span style={{ color: '#27ae60', fontSize: '1.3rem', fontWeight: 'bold' }}>
-                        {/* Properly handle the fee object */}
-                        {consultationFee.currency === 'BDT' ? '৳' : '$'}
-                        {consultationFee.amount || 50}
-                    </span>
-                </div>
-
                 <button 
                     onClick={() => onBookAppointment(doctor)}
                     style={{
                         width: '100%',
-                        padding: '0.9rem',
-                        background: '#3498db',
+                        padding: '0.75rem',
+                        background: '#2563eb',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: '10px',
                         cursor: 'pointer',
-                        fontSize: '1rem',
-                        fontWeight: '600'
+                        fontSize: '0.95rem',
+                        fontWeight: 700
                     }}
-                    onMouseOver={(e) => e.target.style.background = '#2980b9'}
-                    onMouseOut={(e) => e.target.style.background = '#3498db'}
+                    onMouseOver={(e) => e.target.style.background = '#1d4ed8'}
+                    onMouseOut={(e) => e.target.style.background = '#2563eb'}
                 >
                     Book Appointment
                 </button>

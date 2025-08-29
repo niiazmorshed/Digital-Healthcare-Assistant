@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import UseAuth from '../../Hooks/UseAuth';
 import { appointmentAPI } from '../../services/api';
 
 const AppointmentForm = ({ doctor, onClose }) => {
     const { user, userData } = UseAuth();
     const [loading, setLoading] = useState(false);
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
     const [formData, setFormData] = useState({
         patientName: '',
         patientEmail: '',
@@ -16,11 +18,60 @@ const AppointmentForm = ({ doctor, onClose }) => {
         gender: ''
     });
 
+    // Prefill email and name from authenticated user
+    useEffect(() => {
+        const authEmail = user?.email || userData?.email || '';
+        const authName = userData?.displayName || user?.displayName || [userData?.firstName, userData?.lastName].filter(Boolean).join(' ') || '';
+
+        setFormData(prev => ({
+            ...prev,
+            patientEmail: authEmail || prev.patientEmail,
+            patientName: authName || prev.patientName,
+        }));
+    }, [user?.email, userData?.email, user?.displayName, userData?.displayName, userData?.firstName, userData?.lastName]);
+
+    // Fetch available slots when date changes
+    const fetchAvailableSlots = async (selectedDate) => {
+        if (!selectedDate) {
+            setAvailableSlots([]);
+            return;
+        }
+
+        setLoadingSlots(true);
+        try {
+            const response = await appointmentAPI.getAvailableSlots(
+                doctor.contactInfo?.email || doctor.email,
+                selectedDate
+            );
+            
+            if (response.success) {
+                setAvailableSlots(response.data || []);
+            } else {
+                setAvailableSlots([]);
+            }
+        } catch (error) {
+            console.error('Error fetching available slots:', error);
+            setAvailableSlots([]);
+        } finally {
+            setLoadingSlots(false);
+        }
+    };
+
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+
+        // If date changes, fetch available slots and reset time
+        if (name === 'appointmentDate') {
+            fetchAvailableSlots(value);
+            setFormData(prev => ({
+                ...prev,
+                appointmentTime: '' // Reset time when date changes
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -41,6 +92,21 @@ const AppointmentForm = ({ doctor, onClose }) => {
         setLoading(true);
 
         try {
+            // First, check if the slot is still available
+            const slotCheck = await appointmentAPI.checkSlotAvailability(
+                doctor.contactInfo?.email || doctor.email,
+                formData.appointmentDate,
+                formData.appointmentTime
+            );
+
+            if (!slotCheck.available) {
+                alert("❌ This time slot is no longer available. Please choose another time.");
+                // Refresh available slots
+                await fetchAvailableSlots(formData.appointmentDate);
+                setLoading(false);
+                return;
+            }
+
             // Prepare appointment data according to your backend schema
             const appointmentData = {
                 patientId: user.uid, // Firebase UID
@@ -195,12 +261,14 @@ You will receive a confirmation email shortly.`;
                             value={formData.patientEmail}
                             onChange={handleChange}
                             required
+                            readOnly
                             placeholder="your.email@example.com"
                             style={{
                                 width: '100%',
                                 padding: '0.7rem',
                                 border: '1px solid #ddd',
-                                borderRadius: '6px'
+                                borderRadius: '6px',
+                                backgroundColor: '#f3f4f6'
                             }}
                         />
                     </div>
@@ -302,23 +370,34 @@ You will receive a confirmation email shortly.`;
                                 value={formData.appointmentTime}
                                 onChange={handleChange}
                                 required
+                                disabled={loadingSlots || !formData.appointmentDate}
                                 style={{
                                     width: '100%',
                                     padding: '0.7rem',
                                     border: '1px solid #ddd',
-                                    borderRadius: '6px'
+                                    borderRadius: '6px',
+                                    opacity: loadingSlots || !formData.appointmentDate ? 0.6 : 1
                                 }}
                             >
-                                <option value="">Select Time</option>
-                                <option value="09:00-10:00">09:00-10:00</option>
-                                <option value="10:00-11:00">10:00-11:00</option>
-                                <option value="11:00-12:00">11:00-12:00</option>
-                                <option value="12:00-13:00">12:00-13:00</option>
-                                <option value="14:00-15:00">14:00-15:00</option>
-                                <option value="15:00-16:00">15:00-16:00</option>
-                                <option value="16:00-17:00">16:00-17:00</option>
-                                <option value="17:00-18:00">17:00-18:00</option>
+                                <option value="">
+                                    {loadingSlots ? 'Loading slots...' : !formData.appointmentDate ? 'Select Date First' : 'Select Time'}
+                                </option>
+                                {availableSlots.map((slot) => (
+                                    <option key={slot} value={slot}>
+                                        {slot}
+                                    </option>
+                                ))}
                             </select>
+                            {formData.appointmentDate && availableSlots.length === 0 && !loadingSlots && (
+                                <p style={{ 
+                                    fontSize: '0.8rem', 
+                                    color: '#e74c3c', 
+                                    marginTop: '0.5rem',
+                                    fontStyle: 'italic'
+                                }}>
+                                    No available slots for this date. Please select another date.
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -345,15 +424,15 @@ You will receive a confirmation email shortly.`;
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button 
                             type="submit" 
-                            disabled={loading}
+                            disabled={loading || loadingSlots || availableSlots.length === 0}
                             style={{
                                 flex: 1,
                                 padding: '0.9rem',
-                                background: loading ? '#95a5a6' : '#27ae60',
+                                background: (loading || loadingSlots || availableSlots.length === 0) ? '#95a5a6' : '#27ae60',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                cursor: (loading || loadingSlots || availableSlots.length === 0) ? 'not-allowed' : 'pointer',
                                 fontWeight: '600',
                                 fontSize: '1rem'
                             }}

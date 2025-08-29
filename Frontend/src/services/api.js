@@ -85,10 +85,65 @@ export const appointmentAPI = {
     }
   },
 
+  // Check slot availability (for booking and rescheduling)
+  checkSlotAvailability: async (doctorEmail, appointmentDate, appointmentTime, excludeAppointmentId = null) => {
+    try {
+      const params = new URLSearchParams({
+        doctorEmail,
+        appointmentDate,
+        appointmentTime
+      });
+      if (excludeAppointmentId) {
+        params.append('excludeAppointmentId', excludeAppointmentId);
+      }
+      const response = await apiClient.get(`/appointments/check-slot?${params}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get available slots for a specific date
+  getAvailableSlots: async (doctorEmail, appointmentDate, excludeAppointmentId) => {
+    try {
+      const params = new URLSearchParams({
+        doctorEmail,
+        appointmentDate
+      });
+      if (excludeAppointmentId) {
+        params.append('excludeAppointmentId', excludeAppointmentId);
+      }
+      const response = await apiClient.get(`/appointments/available-slots?${params}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Update appointment status (Doctor side)
   updateStatus: async (appointmentId, status) => {
     try {
       const response = await apiClient.put(`/appointments/${appointmentId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Reschedule appointment (Patient side)
+  reschedule: async (appointmentId, updateData) => {
+    try {
+      const response = await apiClient.put(`/appointments/${appointmentId}`, updateData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Cancel appointment (Patient side)
+  cancel: async (appointmentId) => {
+    try {
+      const response = await apiClient.delete(`/appointments/${appointmentId}`);
       return response.data;
     } catch (error) {
       throw error;

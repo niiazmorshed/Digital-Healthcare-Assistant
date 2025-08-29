@@ -19,7 +19,7 @@ const Bannner = () => {
           <section className="pt-32">
             <div className="md: flex flex-col justify-center text-center items-center gap-6 md:pt-6 min-h-screen">
               <div className="animate__animated animate__lightSpeedInLeft flex gap-6">
-                <NavLink to="/products">
+                <NavLink to="/doctors">
                   {" "}
                   <button className="btn btn-outline text-white">Find Doctors</button>
                 </NavLink>
