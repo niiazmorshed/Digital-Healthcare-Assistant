@@ -7,7 +7,7 @@ import Dark from "../../Dark Mode/Dark";
 import UseAuth from "../../Hooks/UseAuth";
 
 const Navbar = () => {
-  const { user, logOut } = UseAuth();
+  const { user, logOut, userData } = UseAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState(null);
   const [resolving, setResolving] = useState(false);
@@ -34,7 +34,6 @@ const Navbar = () => {
   }, [user]);
 
   const fetchRole = useCallback(async () => {
-    // Try cache first
     if (roleStorageKey) {
       const cached = localStorage.getItem(roleStorageKey);
       if (cached) {
@@ -51,7 +50,6 @@ const Navbar = () => {
     if (!token) throw new Error("Not authenticated");
 
     const headers = { Authorization: `Bearer ${token}` };
-    // 1) Try profile endpoint
     try {
       const res = await fetch(`/api/auth/profile`, { headers });
       if (res.ok) {
@@ -62,7 +60,6 @@ const Navbar = () => {
       console.debug("Profile role fetch failed; trying role-check endpoints");
     }
 
-    // 2) Fallback to role check endpoints by email
     const email = user?.email;
     if (!email) throw new Error("Missing email");
     try {
@@ -89,7 +86,6 @@ const Navbar = () => {
     throw new Error("Unable to determine role");
   }, [fetchIdToken, roleStorageKey, user?.email]);
 
-  // Initialize role from cache or API when user changes
   useEffect(() => {
     let cancelled = false;
     if (!user) {
@@ -123,7 +119,6 @@ const Navbar = () => {
         navigate("/login");
         return;
       }
-      // Navigate to general dashboard - the route will handle redirection based on role
       navigate("/dashboard");
     } catch (e) {
       console.error(e);
@@ -151,6 +146,10 @@ const Navbar = () => {
       isActive ? 'text-blue-500' : 'text-white'
     } hover:text-blue-400`;
 
+  // Resolve the best avatar URL (handles Google login as well)
+  const avatarUrl = user?.photoURL || userData?.photoURL || (user?.providerData || []).map(p => p?.photoURL).find(Boolean) || "";
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData?.displayName || user?.displayName || user?.email || 'User')}&background=0D8ABC&color=fff&size=64`;
+
   const navLinks = (
     <>
       <NavLink to="/" className={linkClass}>
@@ -177,29 +176,14 @@ const Navbar = () => {
   );
   return (
     <div className="navbar fixed bg-gray-800 z-10 top-0 shadow-md">
-      {/* fixed */}
       <div className="navbar-start">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h8m-8 6h16"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
             </svg>
           </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
-          >
+          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
             {navLinks}
           </ul>
         </div>
@@ -218,16 +202,15 @@ const Navbar = () => {
         <Dark></Dark>
 
         <div className="dropdown dropdown-end">
-          <div
-            tabIndex={0}
-            role="button"
-            className="btn btn-ghost btn-circle avatar"
-          >
+          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
             {user ? (
-              <div className="w-10 rounded-full">
+              <div className="w-10 rounded-full overflow-hidden">
                 <img
                   alt="User avatar"
-                  src="https://i.ibb.co.com/4PffJnR/photo-2023-02-28-19-26-32-2.jpg"
+                  src={avatarUrl || avatarFallback}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.src = avatarFallback; }}
                 />
               </div>
             ) : (
@@ -236,14 +219,11 @@ const Navbar = () => {
           </div>
 
           {user ? (
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-56"
-            >
+            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-56">
               <li className="px-2 py-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-semibold text-sm md:text-base">{user?.displayName || user?.email}</div>
+                    <div className="font-semibold text-sm md:text-base">{userData?.displayName || user?.displayName || user?.email}</div>
                     <div className="text-xs opacity-70">{user?.email}</div>
                   </div>
                   {role ? <span className={`badge ${roleUi.badge}`}>{`${roleUi.icon} ${role}`}</span> : null}

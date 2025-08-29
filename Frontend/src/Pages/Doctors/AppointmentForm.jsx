@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import UseAuth from '../../Hooks/UseAuth';
 import { appointmentAPI } from '../../services/api';
 
@@ -52,6 +53,7 @@ const AppointmentForm = ({ doctor, onClose }) => {
         } catch (error) {
             console.error('Error fetching available slots:', error);
             setAvailableSlots([]);
+            toast.error('Failed to load available slots.');
         } finally {
             setLoadingSlots(false);
         }
@@ -79,29 +81,28 @@ const AppointmentForm = ({ doctor, onClose }) => {
         
         // Check if user is authenticated
         if (!user) {
-            alert("Please login to book an appointment");
+            toast.error('Please login to book an appointment');
             return;
         }
 
         // Check if user is a patient
         if (userData?.role !== 'patient') {
-            alert("Only patients can book appointments");
+            toast.error('Only patients can book appointments');
             return;
         }
         
         setLoading(true);
 
         try {
-            // First, check if the slot is still available
-            const slotCheck = await appointmentAPI.checkSlotAvailability(
+            // Validate chosen slot using available-slots endpoint
+            const availRes = await appointmentAPI.getAvailableSlots(
                 doctor.contactInfo?.email || doctor.email,
-                formData.appointmentDate,
-                formData.appointmentTime
+                formData.appointmentDate
             );
-
-            if (!slotCheck.available) {
-                alert("❌ This time slot is no longer available. Please choose another time.");
-                // Refresh available slots
+            const freeSlots = (availRes?.data || availRes?.slots || []);
+            const isFree = Array.isArray(freeSlots) && freeSlots.includes(formData.appointmentTime);
+            if (!isFree) {
+                toast.error('This time slot is no longer available. Please choose another time.');
                 await fetchAvailableSlots(formData.appointmentDate);
                 setLoading(false);
                 return;
@@ -124,34 +125,20 @@ const AppointmentForm = ({ doctor, onClose }) => {
             const response = await appointmentAPI.create(appointmentData);
 
             if (response.success) {
-                const { appointmentId } = response;
-
-                // Enhanced success message
-                const successMessage = `
-✅ Appointment Booked Successfully!
-
-📋 Appointment ID: ${appointmentId ? appointmentId.toString().slice(-6).toUpperCase() : 'N/A'}
-👨‍⚕️ Doctor: ${doctor.name}
-📧 Confirmation sent to: ${formData.patientEmail}
-📅 Date: ${formData.appointmentDate}
-🕐 Time: ${formData.appointmentTime}
-
-You will receive a confirmation email shortly.`;
-
-                alert(successMessage);
-                onClose();
+                toast.success(`Appointment booked with ${doctor.name} on ${formData.appointmentDate} at ${formData.appointmentTime}`);
+                setTimeout(() => onClose(), 1200);
             }
         } catch (error) {
             if (error.response?.status === 400) {
-                alert("❌ Invalid appointment data. Please check your information.");
+                toast.error('Invalid appointment data. Please check your information.');
             } else if (error.response?.status === 409) {
-                alert("❌ Appointment slot already booked. Please choose another time.");
+                toast.error('Appointment slot already booked. Please choose another time.');
             } else if (error.response?.status === 401) {
-                alert("❌ Authentication failed. Please login again.");
+                toast.error('Authentication failed. Please login again.');
             } else {
-                alert("❌ Error booking appointment. Please try again.");
+                toast.error('Error booking appointment. Please try again.');
             }
-            console.error("Error:", error);
+            console.error('Error:', error);
         } finally {
             setLoading(false);
         }
@@ -181,6 +168,7 @@ You will receive a confirmation email shortly.`;
             alignItems: 'center',
             zIndex: 1000
         }}>
+            <Toaster position="top-center" reverseOrder={false} />
             <div style={{
                 background: 'white',
                 borderRadius: '10px',

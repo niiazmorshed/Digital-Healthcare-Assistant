@@ -11,6 +11,7 @@ export default function PatientDashboard() {
   const [doctors, setDoctors] = useState({}); // Store doctor details by email
   const [error, setError] = useState(null);
   const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, appointment: null });
+  const [queueEntries, setQueueEntries] = useState([]); // up to 4 entries
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -52,6 +53,32 @@ export default function PatientDashboard() {
     }
   }, [userData?.uid]);
 
+  // Build queue for the patient's next pending appointment
+  const buildMyQueue = useCallback(async (sortedApps) => {
+    try {
+      const myNext = sortedApps.find(a => (a.status || '').toLowerCase() === 'pending');
+      if (!myNext) {
+        setQueueEntries([]);
+        return;
+      }
+      const doctorEmail = myNext.doctorEmail;
+      const response = await appointmentAPI.getDoctorAppointments(doctorEmail);
+      if (!response.success) {
+        setQueueEntries([]);
+        return;
+      }
+      const all = response.data || [];
+      const sameSlot = all.filter(a => (a.status || '').toLowerCase() === 'pending' && a.appointmentDate === myNext.appointmentDate && a.appointmentTime === myNext.appointmentTime)
+        .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
+        .slice(0, 4)
+        .map(a => ({ name: a.patientName, serial: a.serialNumber }));
+      setQueueEntries(sameSlot);
+    } catch (e) {
+      console.debug('Unable to build queue', e);
+      setQueueEntries([]);
+    }
+  }, []);
+
   const handleCancelAppointment = async (appointmentId) => {
     if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
       return;
@@ -62,7 +89,6 @@ export default function PatientDashboard() {
       
       if (response.success) {
         toast.success('Appointment cancelled successfully!');
-        // Refresh appointments
         await fetchPatientAppointments();
       } else {
         toast.error('Failed to cancel appointment');
@@ -114,6 +140,28 @@ export default function PatientDashboard() {
     apt.status === 'completed'
   );
 
+  // Sort appointments by date, time, then serialNumber
+  const toMins = (t) => {
+    if (!t) return 0;
+    const [start] = String(t).split('-');
+    const [h, m] = start.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    const d = new Date(a.appointmentDate) - new Date(b.appointmentDate);
+    if (d !== 0) return d;
+    const tm = toMins(a.appointmentTime) - toMins(b.appointmentTime);
+    if (tm !== 0) return tm;
+    return (a.serialNumber || 0) - (b.serialNumber || 0);
+  });
+
+  // Refresh queue whenever sorted appointments change
+  useEffect(() => {
+    (async () => {
+      await buildMyQueue(sortedAppointments);
+    })();
+  }, [sortedAppointments, buildMyQueue]);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -131,20 +179,30 @@ export default function PatientDashboard() {
     );
   }
 
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData?.displayName || userData?.firstName || 'User')}&background=0D8ABC&color=fff&size=128`;
+
   return (
     <div className="space-y-6">
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card bg-base-200 shadow">
+        <div className="card bg-base-200 shadow md:col-span-2">
           <div className="card-body">
-            <h3 className="card-title">My Profile</h3>
-            <p>ID: {userData?.uid?.slice(-6)?.toUpperCase() || 'N/A'}</p>
-            <p>Name: {userData?.displayName || userData?.firstName || 'N/A'}</p>
-            <p>Email: {userData?.email || 'N/A'}</p>
-            <p>Role: {userData?.role || 'N/A'}</p>
-            <p>Member Since: {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}</p>
-            <div className="card-actions justify-end">
-              <button className="btn btn-sm">Edit</button>
+            <h3 className="card-title mb-2">My Profile</h3>
+            <div className="flex items-start gap-5">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-base-300 border-4 border-white shadow">
+                {userData?.photoURL ? (
+                  <img src={userData.photoURL} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <img src={avatarFallback} alt="avatar" className="w-full h-full object-cover" />
+                )}
+              </div>
+              <div>
+                <p><span className="font-semibold">Name:</span> {userData?.displayName || userData?.firstName || 'N/A'}</p>
+                <p className="whitespace-nowrap"><span className="font-semibold">Email:</span> {userData?.email || 'N/A'}</p>
+                <p><span className="font-semibold">Role:</span> {userData?.role || 'N/A'}</p>
+                <p><span className="font-semibold">Member Since:</span> {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}</p>
+              </div>
             </div>
+            <p className="mt-3 text-sm opacity-80">Queue system: Each time slot allows up to 4 patients. Your serial is shown with each appointment.</p>
           </div>
         </div>
 
@@ -160,6 +218,25 @@ export default function PatientDashboard() {
           <div className="stat">
             <div className="stat-title">Pending</div>
             <div className="stat-value">{pendingAppointments.length}</div>
+          </div>
+        </div>
+
+        {/* Queue card */}
+        <div className="card bg-base-200 shadow">
+          <div className="card-body">
+            <h3 className="card-title">Current Queue</h3>
+            {queueEntries.length === 0 ? (
+              <p className="opacity-70 text-sm">No pending queue for your next appointment.</p>
+            ) : (
+              <ul className="space-y-2">
+                {queueEntries.map(q => (
+                  <li key={q.serial} className="flex items-center gap-3">
+                    <span className="badge">{q.serial}</span>
+                    <span>{q.name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </section>
@@ -185,7 +262,7 @@ export default function PatientDashboard() {
                   <td colSpan={7} className="text-center opacity-70">No appointments found</td>
                 </tr>
               ) : (
-                appointments.map((appt) => {
+                sortedAppointments.map((appt) => {
                   const status = (appt.status || '').toLowerCase();
                   const doctorName = getDoctorName(appt.doctorEmail);
                   const doctorSpecialization = getDoctorSpecialization(appt.doctorEmail);
@@ -206,6 +283,7 @@ export default function PatientDashboard() {
                         <span className={`badge ${status === 'confirmed' ? 'badge-success' : status === 'pending' ? 'badge-warning' : status === 'completed' ? 'badge-info' : status === 'cancelled' ? 'badge-error' : 'badge-ghost'}`}>
                           {status}
                         </span>
+                        <span className="ml-2 text-sm opacity-80">Serial: <span className="badge">{appt.serialNumber || '-'}</span></span>
                       </td>
                       <td className="text-right">
                         {status === 'pending' && (
@@ -227,6 +305,12 @@ export default function PatientDashboard() {
                         {status === 'confirmed' && (
                           <div className="flex gap-1">
                             <button 
+                              className="btn btn-xs btn-outline btn-error" 
+                              onClick={() => handleCancelAppointment(appt._id)}
+                            >
+                              Cancel
+                            </button>
+                            <button 
                               className="btn btn-xs btn-outline btn-primary" 
                               onClick={() => handleRescheduleAppointment(appt)}
                             >
@@ -247,65 +331,6 @@ export default function PatientDashboard() {
         </div>
       </section>
 
-      {upcomingAppointments.length > 0 && (
-        <section>
-          <h3 className="text-lg font-semibold mb-3">Upcoming Appointments</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {upcomingAppointments.map((appt) => {
-              const doctorName = getDoctorName(appt.doctorEmail);
-              const doctorSpecialization = getDoctorSpecialization(appt.doctorEmail);
-              
-              return (
-                <div key={appt._id} className="card bg-base-200 shadow">
-                  <div className="card-body">
-                    <h4 className="card-title">{doctorName}</h4>
-                    <p className="text-sm opacity-70">{doctorSpecialization}</p>
-                    <p>Date: {appt.appointmentDate}</p>
-                    <p>Time: {appt.appointmentTime}</p>
-                    <p>Symptoms: {appt.symptoms || 'N/A'}</p>
-                    <div className="card-actions justify-end">
-                      <button 
-                        className="btn btn-xs btn-outline btn-primary"
-                        onClick={() => handleRescheduleAppointment(appt)}
-                      >
-                        Reschedule
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {completedAppointments.length > 0 && (
-        <section>
-          <h3 className="text-lg font-semibold mb-3">Recent Completed Appointments</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {completedAppointments.slice(0, 3).map((appt) => {
-              const doctorName = getDoctorName(appt.doctorEmail);
-              const doctorSpecialization = getDoctorSpecialization(appt.doctorEmail);
-              
-              return (
-                <div key={appt._id} className="card bg-base-200 shadow">
-                  <div className="card-body">
-                    <h4 className="card-title">{doctorName}</h4>
-                    <p className="text-sm opacity-70">{doctorSpecialization}</p>
-                    <p>Date: {appt.appointmentDate}</p>
-                    <p>Time: {appt.appointmentTime}</p>
-                    <p>Symptoms: {appt.symptoms || 'N/A'}</p>
-                    <div className="card-actions justify-end">
-                      <button className="btn btn-xs btn-outline">View Details</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {/* Doctor Details Section */}
       {appointments.length > 0 && (
         <section>
@@ -322,8 +347,12 @@ export default function PatientDashboard() {
                 <div key={doctor.email} className="card bg-base-200 shadow">
                   <div className="card-body">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center text-lg font-bold">
-                        {doctor.name ? doctor.name.charAt(0).toUpperCase() : 'D'}
+                      <div className="w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center text-lg font-bold overflow-hidden">
+                        {doctor.photoURL ? (
+                          <img src={doctor.photoURL} alt={doctor.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{doctor.name ? doctor.name.charAt(0).toUpperCase() : 'D'}</span>
+                        )}
                       </div>
                       <div>
                         <h4 className="card-title text-lg">{doctor.name || 'Dr. ' + doctor.email.split('@')[0]}</h4>

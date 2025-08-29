@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { NavLink, useNavigate } from "react-router-dom";
 import UseAuth from "../../Hooks/UseAuth";
+import { userAPI } from "../../services/api";
 
 const Register = () => {
   const { createUser, handleUserAuth } = UseAuth();
@@ -48,6 +49,16 @@ const Register = () => {
 
       // Step 3: Handle user authentication with backend (will register with correct role)
       const userData = await handleUserAuth(firebaseUser);
+
+      // Step 4: If a photo is available, upsert to users collection
+      try {
+        const photoURL = firebaseUser?.photoURL || photo;
+        if (photoURL) {
+          await userAPI.updateProfile(firebaseUser.uid, { photoURL });
+        }
+      } catch (e2) {
+        console.debug("Skipping photo upsert:", e2?.message || e2);
+      }
 
       // Success
       e.target.reset();

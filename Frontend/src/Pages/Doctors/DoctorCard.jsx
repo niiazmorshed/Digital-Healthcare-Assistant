@@ -1,7 +1,6 @@
 import React from 'react';
 
 const DoctorCard = ({ doctor, onBookAppointment }) => {
-    // Provide default values to prevent undefined errors
     const {
         name = 'Doctor Name',
         specialization = 'General',
@@ -10,16 +9,21 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
         department = 'General Medicine',
         rating = 4.5,
         image = '',
+        photoURL = '',
         bio = 'Dedicated healthcare professional providing compassionate, evidence-based care.',
         availableDays = [],
-        consultationFee = { amount: 50, currency: 'USD' }, // Handle as object
+        consultationFee = { amount: 50, currency: 'USD' },
         availableTimeSlots = []
     } = doctor || {};
 
     const currencySymbol = consultationFee.currency === 'BDT' ? '৳' : '$';
+    const coverImage = photoURL || image;
+
+    const AVATAR_SIZE = 144; // diameter in px
 
     return (
         <div style={{
+            position: 'relative',
             background: 'white',
             borderRadius: '12px',
             boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
@@ -32,30 +36,40 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow='0 10px 26px rgba(0,0,0,0.12)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.08)'; }}
         >
+            {/* Top band that the avatar slightly overlaps */}
             <div style={{
                 width: '100%',
-                height: '160px',
-                background: '#f0f4f8',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                height: '96px',
+                background: '#eef2f7'
+            }} />
+
+            {/* Centered circular avatar overlapping the top band */}
+            <div style={{
+                position: 'absolute',
+                top: '96px',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: `${AVATAR_SIZE}px`,
+                height: `${AVATAR_SIZE}px`,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                border: '4px solid #ffffff',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                background: '#ffffff'
             }}>
-                {image ? (
-                    <img 
-                        src={image}
+                {coverImage ? (
+                    <img
+                        src={coverImage}
                         alt={name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div style="font-size: 42px;">👨‍⚕️</div>';
-                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<div style="font-size: 42px; display:grid; place-items:center; height:100%">👨‍⚕️</div>'; }}
                     />
                 ) : (
-                    <div style={{ fontSize: '42px' }}>👨‍⚕️</div>
+                    <div style={{ fontSize: '42px', display: 'grid', placeItems: 'center', height: '100%' }}>👨‍⚕️</div>
                 )}
             </div>
             
-            <div style={{ padding: '1rem' }}>
+            <div style={{ padding: '1.25rem', paddingTop: `${AVATAR_SIZE / 2 + 16}px` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <h3 style={{ color: '#1f2937', marginBottom: '0.25rem', fontSize: '1.1rem', fontWeight: 700 }}>{name}</h3>
                     <span style={{ color: '#10b981', fontWeight: 700 }}>{currencySymbol}{consultationFee.amount || 50}</span>
@@ -64,8 +78,6 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
                 {qualification && (
                     <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{qualification}</p>
                 )}
-
-                {/* Full bio */}
                 {bio && (
                     <p style={{ color: '#374151', fontSize: '0.9rem', lineHeight: 1.4, marginBottom: '0.75rem' }}>{bio}</p>
                 )}

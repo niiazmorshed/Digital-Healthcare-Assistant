@@ -4,6 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { FaGithub, FaGoogle, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import UseAuth from "../../Hooks/UseAuth";
+import { userAPI } from "../../services/api";
 
 const Login = () => {
   const { logIn, googleSignIn, gitHubSignIn, handleUserAuth } = UseAuth();
@@ -12,6 +13,17 @@ const Login = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const maybeUpsertPhoto = async (firebaseUser) => {
+    try {
+      const url = firebaseUser?.photoURL || firebaseUser?.providerData?.[0]?.photoURL;
+      if (!url) return; // nothing to store
+      await userAPI.updateProfile(firebaseUser.uid, { photoURL: url });
+    } catch (e) {
+      // Non-blocking
+      console.debug("Skipping photo upsert:", e?.message || e);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -33,6 +45,7 @@ const Login = () => {
 
       // Step 2: Handle user authentication with backend (login or register)
       await handleUserAuth(firebaseUser);
+      await maybeUpsertPhoto(firebaseUser);
 
       // Success
       e.target.reset();
@@ -63,6 +76,7 @@ const Login = () => {
       const userCredential = await googleSignIn();
       const firebaseUser = userCredential.user;
       await handleUserAuth(firebaseUser);
+      await maybeUpsertPhoto(firebaseUser);
       toast.success("Google sign-in successful!", { id: "oauth" });
       navigate(location?.state ? location.state : "/");
     } catch (error) {
@@ -81,6 +95,7 @@ const Login = () => {
       const userCredential = await gitHubSignIn();
       const firebaseUser = userCredential.user;
       await handleUserAuth(firebaseUser);
+      await maybeUpsertPhoto(firebaseUser);
       toast.success("GitHub sign-in successful!", { id: "oauth" });
       navigate(location?.state ? location.state : "/");
     } catch (error) {
