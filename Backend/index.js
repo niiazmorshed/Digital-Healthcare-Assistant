@@ -147,7 +147,7 @@ app.get("/api/doctors/specialization/:specialization", async (req, res) => {
 // User Registration API endpoint
 app.post("/api/users/register", async (req, res) => {
   try {
-    const { uid, email, role, displayName } = req.body;
+    const { uid, email, role, displayName, photoURL } = req.body;
     
     // Validate required fields
     if (!uid || !email || !displayName) {
@@ -209,6 +209,9 @@ app.post("/api/users/register", async (req, res) => {
       displayName,
       createdAt: new Date()
     };
+    if (photoURL) {
+      newUser.photoURL = photoURL;
+    }
     
     const result = await usersCollection.insertOne(newUser);
     
@@ -233,7 +236,7 @@ app.post("/api/users/register", async (req, res) => {
 // User Login API endpoint
 app.post("/api/users/login", async (req, res) => {
   try {
-    const { uid, email } = req.body;
+    const { uid, email, photoURL } = req.body;
     
     if (!uid) {
       return res.status(400).json({
@@ -272,6 +275,15 @@ app.post("/api/users/login", async (req, res) => {
         );
         user = await usersCollection.findOne({ uid });
       }
+    }
+
+    // If a google photoURL is provided and user has none or different, upsert it
+    if (photoURL && (!user.photoURL || user.photoURL !== photoURL)) {
+      await usersCollection.updateOne(
+        { uid },
+        { $set: { photoURL } }
+      );
+      user = await usersCollection.findOne({ uid });
     }
     
     res.status(200).json({
@@ -443,18 +455,18 @@ app.post("/api/appointments", async (req, res) => {
       });
     }
     
-    // Check if appointment time is available
-    const existingAppointment = await appointmentsCollection.findOne({
+    // Queue capacity: max 4 active appointments per slot
+    const activeStatuses = ['pending', 'confirmed'];
+    const currentCount = await appointmentsCollection.countDocuments({
       doctorEmail: doctorEmail.toLowerCase(),
       appointmentDate,
       appointmentTime,
-      status: { $ne: 'cancelled' }
+      status: { $in: activeStatuses }
     });
-    
-    if (existingAppointment) {
+    if (currentCount >= 4) {
       return res.status(409).json({
         success: false,
-        message: "This time slot is already booked"
+        message: "This time slot is full. Please choose another slot."
       });
     }
     
@@ -470,6 +482,7 @@ app.post("/api/appointments", async (req, res) => {
       appointmentDate,
       appointmentTime,
       symptoms,
+      serialNumber: currentCount + 1,
       status: 'pending', // pending, confirmed, completed, cancelled
       createdAt: new Date()
     };
@@ -519,7 +532,7 @@ app.get("/api/appointments/doctor/:doctorEmail", async (req, res) => {
     
     const appointments = await appointmentsCollection.find({
       doctorEmail: doctorEmail.toLowerCase()
-    }).sort({ appointmentDate: 1, appointmentTime: 1 }).toArray();
+    }).sort({ appointmentDate: 1, appointmentTime: 1, serialNumber: 1 }).toArray();
     
     res.status(200).json({
       success: true,
@@ -546,7 +559,7 @@ app.get("/api/appointments/patient/:patientId", async (req, res) => {
     
     const appointments = await appointmentsCollection.find({
       patientId
-    }).sort({ appointmentDate: 1, appointmentTime: 1 }).toArray();
+    }).sort({ appointmentDate: 1, appointmentTime: 1, serialNumber: 1 }).toArray();
     
     res.status(200).json({
       success: true,
@@ -578,22 +591,44 @@ app.put("/api/appointments/:appointmentId/status", async (req, res) => {
     
     const database = client.db("HealthcareDB");
     const appointmentsCollection = database.collection("appointments");
-    
-    const result = await appointmentsCollection.updateOne(
+
+    // Get the original appointment to know its slot context
+    const original = await appointmentsCollection.findOne({ _id: new ObjectId(appointmentId) });
+    if (!original) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    // Update the appointment status
+    await appointmentsCollection.updateOne(
       { _id: new ObjectId(appointmentId) },
       { $set: { status, updatedAt: new Date() } }
     );
-    
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found"
-      });
+
+    // If cancelled, resequence serial numbers for the same slot
+    if (status === 'cancelled') {
+      const activeStatuses = ['pending', 'confirmed'];
+      const sameSlotActive = await appointmentsCollection
+        .find({
+          doctorEmail: original.doctorEmail,
+          appointmentDate: original.appointmentDate,
+          appointmentTime: original.appointmentTime,
+          status: { $in: activeStatuses }
+        })
+        .sort({ createdAt: 1, _id: 1 })
+        .toArray();
+
+      const bulk = sameSlotActive.map((apt, idx) => ({
+        updateOne: {
+          filter: { _id: apt._id },
+          update: { $set: { serialNumber: idx + 1 } }
+        }
+      }));
+      if (bulk.length) {
+        await appointmentsCollection.bulkWrite(bulk);
+      }
     }
-    
-    const updatedAppointment = await appointmentsCollection.findOne({
-      _id: new ObjectId(appointmentId)
-    });
+
+    const updatedAppointment = await appointmentsCollection.findOne({ _id: new ObjectId(appointmentId) });
     
     res.status(200).json({
       success: true,
@@ -642,12 +677,18 @@ app.get("/api/appointments/available-slots", async (req, res) => {
       query._id = { $ne: new ObjectId(excludeAppointmentId) };
     }
 
+    // Count active bookings per slot
     const bookedAppointments = await appointmentsCollection
       .find(query, { projection: { appointmentTime: 1 } })
       .toArray();
 
-    const bookedSlots = new Set(bookedAppointments.map(a => a.appointmentTime));
-    const availableSlots = allSlots.filter(slot => !bookedSlots.has(slot));
+    const slotToCount = bookedAppointments.reduce((acc, a) => {
+      acc[a.appointmentTime] = (acc[a.appointmentTime] || 0) + 1;
+      return acc;
+    }, {});
+
+    const MAX_PER_SLOT = 4;
+    const availableSlots = allSlots.filter(slot => (slotToCount[slot] || 0) < MAX_PER_SLOT);
 
     return res.status(200).json({ success: true, data: availableSlots });
   } catch (error) {
