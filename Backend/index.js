@@ -610,6 +610,52 @@ app.put("/api/appointments/:appointmentId/status", async (req, res) => {
   }
 });
 
+// Get available slots for a doctor and date (with optional exclusion for rescheduling)
+app.get("/api/appointments/available-slots", async (req, res) => {
+  try {
+    const { doctorEmail, appointmentDate, excludeAppointmentId } = req.query;
+
+    if (!doctorEmail || !appointmentDate) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorEmail and appointmentDate are required"
+      });
+    }
+
+    const allSlots = [
+      "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00",
+      "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
+      "16:00-17:00", "17:00-18:00"
+    ];
+
+    const database = client.db("HealthcareDB");
+    const appointmentsCollection = database.collection("appointments");
+
+    const query = {
+      doctorEmail: doctorEmail.toLowerCase(),
+      appointmentDate,
+      status: { $in: ["pending", "confirmed"] }
+    };
+
+    // When rescheduling, ignore the patient's current appointment so they can keep it
+    if (excludeAppointmentId) {
+      query._id = { $ne: new ObjectId(excludeAppointmentId) };
+    }
+
+    const bookedAppointments = await appointmentsCollection
+      .find(query, { projection: { appointmentTime: 1 } })
+      .toArray();
+
+    const bookedSlots = new Set(bookedAppointments.map(a => a.appointmentTime));
+    const availableSlots = allSlots.filter(slot => !bookedSlots.has(slot));
+
+    return res.status(200).json({ success: true, data: availableSlots });
+  } catch (error) {
+    console.error("Error fetching available slots:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch available slots", error: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Bhaai is running on port ${port}`);
 });
