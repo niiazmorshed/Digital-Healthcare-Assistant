@@ -159,6 +159,82 @@ export const appointmentAPI = {
       throw error;
     }
   },
+
+  // New methods for request-based system
+  getRequests: async (doctorEmail) => {
+    try {
+      const response = await apiClient.get(`/appointments/requests/${doctorEmail}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  approveRequest: async (appointmentId) => {
+    try {
+      const response = await apiClient.put(`/appointments/${appointmentId}/approve`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  rejectRequest: async (appointmentId, rejectionReason) => {
+    try {
+      const response = await apiClient.put(`/appointments/${appointmentId}/reject`, { rejectionReason });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Add prescription to appointment
+  addPrescription: async (appointmentId, prescriptionData) => {
+    try {
+      const response = await apiClient.put(`/appointments/${appointmentId}/prescription`, prescriptionData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Add prescription to patient collection
+  addPrescriptionToPatient: async (patientEmail, prescriptionData) => {
+    try {
+      const response = await apiClient.put(`/patients/${patientEmail}/prescription`, prescriptionData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get patient data from patient collection
+  getPatientData: async (patientEmail) => {
+    try {
+      const response = await apiClient.get(`/patients/profile/${patientEmail}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all patients for a doctor
+  getDoctorPatients: async (doctorEmail) => {
+    try {
+      const response = await apiClient.get(`/doctors/${doctorEmail}/patients`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get completed patients for a doctor
+  getCompletedPatients: async (doctorEmail) => {
+    try {
+      const response = await apiClient.get(`/patients/${doctorEmail}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 // Doctor API functions

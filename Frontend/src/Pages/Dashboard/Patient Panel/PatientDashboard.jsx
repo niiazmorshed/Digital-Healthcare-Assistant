@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import UseAuth from '../../../Hooks/UseAuth';
 import { appointmentAPI, doctorAPI } from '../../../services/api';
+import PrescriptionViewModal from './PrescriptionViewModal';
 import RescheduleModal from './RescheduleModal';
 
 export default function PatientDashboard() {
@@ -12,6 +13,7 @@ export default function PatientDashboard() {
   const [error, setError] = useState(null);
   const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, appointment: null });
   const [queueEntries, setQueueEntries] = useState([]); // up to 4 entries
+  const [prescriptionModal, setPrescriptionModal] = useState({ isOpen: false, appointment: null });
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -53,10 +55,12 @@ export default function PatientDashboard() {
     }
   }, [userData?.uid]);
 
-  // Build queue for the patient's next pending appointment
+  // Build queue for the patient's next active appointment
   const buildMyQueue = useCallback(async (sortedApps) => {
     try {
-      const myNext = sortedApps.find(a => (a.status || '').toLowerCase() === 'pending');
+      const myNext = sortedApps.find(a => 
+        ['pending', 'confirmed', 'approved'].includes((a.status || '').toLowerCase())
+      );
       if (!myNext) {
         setQueueEntries([]);
         return;
@@ -68,16 +72,41 @@ export default function PatientDashboard() {
         return;
       }
       const all = response.data || [];
-      const sameSlot = all.filter(a => (a.status || '').toLowerCase() === 'pending' && a.appointmentDate === myNext.appointmentDate && a.appointmentTime === myNext.appointmentTime)
-        .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
-        .slice(0, 4)
-        .map(a => ({ name: a.patientName, serial: a.serialNumber }));
+      const sameSlot = all.filter(a => 
+        ['pending', 'confirmed', 'approved'].includes((a.status || '').toLowerCase()) && 
+        a.appointmentDate === myNext.appointmentDate && 
+        a.appointmentTime === myNext.appointmentTime
+      )
+      .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
+      .slice(0, 4)
+      .map((a, index) => ({ 
+        name: a.patientName, 
+        serial: index + 1, // Ensure proper sequential numbering
+        status: a.status,
+        isMe: a.patientEmail === userData?.email,
+        estimatedTime: calculateEstimatedTime(myNext.appointmentTime, index + 1)
+      }));
       setQueueEntries(sameSlot);
     } catch (e) {
       console.debug('Unable to build queue', e);
       setQueueEntries([]);
     }
-  }, []);
+  }, [userData?.email]);
+
+  // Calculate estimated time for each patient (20 minutes per patient)
+  const calculateEstimatedTime = (slotTime, serialNumber) => {
+    if (!slotTime) return '';
+    
+    const [startTime] = slotTime.split('-');
+    const [hours, minutes] = startTime.split(':').map(Number);
+    
+    // Add 20 minutes for each patient before this one
+    const totalMinutes = hours * 60 + minutes + ((serialNumber - 1) * 20);
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+    
+    return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+  };
 
   const handleCancelAppointment = async (appointmentId) => {
     if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
@@ -90,6 +119,7 @@ export default function PatientDashboard() {
       if (response.success) {
         toast.success('Appointment cancelled successfully!');
         await fetchPatientAppointments();
+        // Queue will automatically refresh due to useEffect dependency
       } else {
         toast.error('Failed to cancel appointment');
       }
@@ -111,10 +141,13 @@ export default function PatientDashboard() {
     setRescheduleModal({ isOpen: false, appointment: null });
   };
 
-  useEffect(() => {
-    fetchDoctors();
-    fetchPatientAppointments();
-  }, [fetchDoctors, fetchPatientAppointments]);
+  const handleViewPrescription = (appointment) => {
+    setPrescriptionModal({ isOpen: true, appointment });
+  };
+
+  const closePrescriptionModal = () => {
+    setPrescriptionModal({ isOpen: false, appointment: null });
+  };
 
   const getDoctorName = (doctorEmail) => {
     if (!doctorEmail) return 'N/A';
@@ -129,11 +162,11 @@ export default function PatientDashboard() {
   };
 
   const upcomingAppointments = appointments.filter(apt => 
-    apt.status === 'confirmed' && new Date(apt.appointmentDate) > new Date()
+    (apt.status === 'confirmed' || apt.status === 'approved') && new Date(apt.appointmentDate) > new Date()
   );
   
   const pendingAppointments = appointments.filter(apt => 
-    apt.status === 'pending'
+    apt.status === 'pending' || apt.status === 'pending_request'
   );
   
   const completedAppointments = appointments.filter(apt => 
@@ -155,12 +188,19 @@ export default function PatientDashboard() {
     return (a.serialNumber || 0) - (b.serialNumber || 0);
   });
 
-  // Refresh queue whenever sorted appointments change
   useEffect(() => {
-    (async () => {
-      await buildMyQueue(sortedAppointments);
-    })();
-  }, [sortedAppointments, buildMyQueue]);
+    fetchDoctors();
+    fetchPatientAppointments();
+  }, [fetchDoctors, fetchPatientAppointments]);
+
+  // Refresh queue whenever appointments change
+  useEffect(() => {
+    if (appointments.length > 0) {
+      buildMyQueue(sortedAppointments);
+    }
+  }, [appointments, buildMyQueue, sortedAppointments]);
+
+
 
   if (loading) {
     return (
@@ -226,16 +266,50 @@ export default function PatientDashboard() {
           <div className="card-body">
             <h3 className="card-title">Current Queue</h3>
             {queueEntries.length === 0 ? (
-              <p className="opacity-70 text-sm">No pending queue for your next appointment.</p>
+              <p className="opacity-70 text-sm">No active queue for your next appointment.</p>
             ) : (
-              <ul className="space-y-2">
-                {queueEntries.map(q => (
-                  <li key={q.serial} className="flex items-center gap-3">
-                    <span className="badge">{q.serial}</span>
-                    <span>{q.name}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-3">
+                <p className="text-sm opacity-70 mb-2">
+                  Your next appointment: {queueEntries[0]?.appointmentDate} at {queueEntries[0]?.appointmentTime}
+                </p>
+                <ul className="space-y-2">
+                  {queueEntries.map((q, index) => (
+                    <li key={q.serial} className={`p-2 rounded ${
+                      q.isMe ? 'bg-primary/10 border border-primary/20' : ''
+                    }`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-3">
+                          <span className={`badge ${q.isMe ? 'badge-primary' : 'badge-ghost'}`}>
+                            {q.serial}
+                          </span>
+                          <span className={`font-medium ${q.isMe ? 'text-primary' : ''}`}>
+                            {q.isMe ? 'You' : q.name}
+                          </span>
+                        </div>
+                        <span className={`badge badge-xs ${
+                          q.status === 'confirmed' ? 'badge-success' : 
+                          q.status === 'approved' ? 'badge-info' : 
+                          'badge-warning'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </div>
+                      <div className="ml-8 text-sm">
+                        {index === 0 ? (
+                          <span className="text-primary font-medium">🕐 Current: {q.estimatedTime}</span>
+                        ) : (
+                          <span className="text-gray-600">⏰ Estimated: {q.estimatedTime}</span>
+                        )}
+                      </div>
+                      {index === 1 && (
+                        <div className="ml-8 mt-1">
+                          <span className="badge badge-warning badge-xs">Next: Please be ready!</span>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>
@@ -280,12 +354,26 @@ export default function PatientDashboard() {
                       <td>{appt.appointmentTime}</td>
                       <td>{appt.symptoms || '-'}</td>
                       <td>
-                        <span className={`badge ${status === 'confirmed' ? 'badge-success' : status === 'pending' ? 'badge-warning' : status === 'completed' ? 'badge-info' : status === 'cancelled' ? 'badge-error' : 'badge-ghost'}`}>
-                          {status}
+                        <span className={`badge ${
+                          status === 'confirmed' ? 'badge-success' : 
+                          status === 'approved' ? 'badge-success' :
+                          status === 'pending' ? 'badge-warning' : 
+                          status === 'pending_request' ? 'badge-warning' :
+                          status === 'completed' ? 'badge-info' : 
+                          status === 'cancelled' ? 'badge-error' : 
+                          status === 'rejected' ? 'badge-error' :
+                          'badge-ghost'
+                        }`}>
+                          {status === 'pending_request' ? 'Pending Request' : status}
                         </span>
                         <span className="ml-2 text-sm opacity-80">Serial: <span className="badge">{appt.serialNumber || '-'}</span></span>
                       </td>
                       <td className="text-right">
+                        {status === 'pending_request' && (
+                          <div className="flex gap-1">
+                            <span className="text-sm opacity-70">Waiting for doctor approval</span>
+                          </div>
+                        )}
                         {status === 'pending' && (
                           <div className="flex gap-1">
                             <button 
@@ -302,7 +390,7 @@ export default function PatientDashboard() {
                             </button>
                           </div>
                         )}
-                        {status === 'confirmed' && (
+                        {(status === 'confirmed' || status === 'approved') && (
                           <div className="flex gap-1">
                             <button 
                               className="btn btn-xs btn-outline btn-error" 
@@ -318,9 +406,19 @@ export default function PatientDashboard() {
                             </button>
                           </div>
                         )}
-                        {status === 'completed' && (
-                          <span className="opacity-60">—</span>
-                        )}
+                                                 {status === 'completed' && (
+                           <div className="flex gap-1">
+                             <button className="btn btn-xs btn-outline btn-success">
+                               Payment
+                             </button>
+                             <button 
+                               className="btn btn-xs btn-outline btn-info"
+                               onClick={() => handleViewPrescription(appt)}
+                             >
+                               View Prescription
+                             </button>
+                           </div>
+                         )}
                       </td>
                     </tr>
                   );
@@ -381,12 +479,63 @@ export default function PatientDashboard() {
         </section>
       )}
 
+      {/* Prescriptions Section */}
+      {appointments.length > 0 && (
+        <section>
+          <h3 className="text-lg font-semibold mb-3">My Prescriptions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {appointments.filter(appt => appt.status === 'completed' && appt.prescription).map((appt, index) => (
+              <div key={index} className="card bg-base-200 shadow">
+                <div className="card-body">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center text-lg font-bold">
+                      💊
+                    </div>
+                    <div>
+                      <h4 className="card-title text-lg">Prescription #{index + 1}</h4>
+                      <p className="text-sm opacity-70">
+                        {appt.appointmentDate} at {appt.appointmentTime}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-semibold">Diagnosis:</span> {appt.prescription.diagnosis}</p>
+                    <p><span className="font-semibold">Medications:</span> {appt.prescription.medications}</p>
+                    {appt.prescription.dosage && <p><span className="font-semibold">Dosage:</span> {appt.prescription.dosage}</p>}
+                    {appt.prescription.instructions && <p><span className="font-semibold">Instructions:</span> {appt.prescription.instructions}</p>}
+                    {appt.prescription.followUp && <p><span className="font-semibold">Follow-up:</span> {appt.prescription.followUp}</p>}
+                    {appt.prescription.notes && <p><span className="font-semibold">Notes:</span> {appt.prescription.notes}</p>}
+                  </div>
+
+                  <div className="card-actions justify-end mt-3">
+                    <button 
+                      className="btn btn-xs btn-outline btn-primary"
+                      onClick={() => handleViewPrescription(appt)}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Reschedule Modal */}
       <RescheduleModal
         appointment={rescheduleModal.appointment}
         isOpen={rescheduleModal.isOpen}
         onClose={closeRescheduleModal}
         onSuccess={handleRescheduleSuccess}
+      />
+
+      {/* Prescription View Modal */}
+      <PrescriptionViewModal
+        appointment={prescriptionModal.appointment}
+        isOpen={prescriptionModal.isOpen}
+        onClose={closePrescriptionModal}
       />
     </div>
   );

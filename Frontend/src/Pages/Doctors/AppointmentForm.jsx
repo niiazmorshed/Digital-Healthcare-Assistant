@@ -125,7 +125,7 @@ const AppointmentForm = ({ doctor, onClose }) => {
             const response = await appointmentAPI.create(appointmentData);
 
             if (response.success) {
-                toast.success(`Appointment booked with ${doctor.name} on ${formData.appointmentDate} at ${formData.appointmentTime}`);
+                toast.success(`Appointment request sent to ${doctor.name} for ${formData.appointmentDate} at ${formData.appointmentTime}. Waiting for doctor approval.`);
                 setTimeout(() => onClose(), 1200);
             }
         } catch (error) {
