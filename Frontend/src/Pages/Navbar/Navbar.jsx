@@ -190,7 +190,7 @@ const Navbar = () => {
         <Link to="/">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             <span className="text-white">Digital</span>{" "}
-            <span className="text-blue-500">Healthcare</span>
+            <span className="text-blue-500">HealthJioybangla</span>
           </h1>
         </Link>
       </div>
