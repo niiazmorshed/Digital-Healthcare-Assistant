@@ -529,7 +529,7 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
       });
     }
     
-    // Check queue capacity for this time slot
+    // Check queue capacity for this time slot (count all active statuses)
     const activeStatuses = ['approved', 'pending', 'confirmed'];
     const currentCount = await appointmentsCollection.countDocuments({
       doctorEmail: appointmentRequest.doctorEmail,
@@ -545,8 +545,19 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
       });
     }
     
-    // Approve and add to queue with serial number
-    const serialNumber = currentCount + 1;
+    // Count ONLY approved appointments for serial number assignment
+    const approvedCount = await appointmentsCollection.countDocuments({
+      doctorEmail: appointmentRequest.doctorEmail,
+      appointmentDate: appointmentRequest.appointmentDate,
+      appointmentTime: appointmentRequest.appointmentTime,
+      status: 'approved'
+    });
+    
+    // Assign the next serial number based on approved count
+    const serialNumber = approvedCount + 1;
+    
+    console.log(`📋 Approving appointment for ${appointmentRequest.patientName}`);
+    console.log(`🔢 Current approved count: ${approvedCount}, New serial number: ${serialNumber}`);
     
     await appointmentsCollection.updateOne(
       { _id: new ObjectId(appointmentId) },
@@ -778,6 +789,11 @@ app.put("/api/appointments/:appointmentId/status", async (req, res) => {
         } 
       }
     );
+
+    // If status is 'completed' or 'cancelled', resequence the queue
+    if (status === 'completed' || status === 'cancelled') {
+      await resequenceQueue(original.doctorEmail, original.appointmentDate, original.appointmentTime);
+    }
     
     // If status is 'completed', create patient record
     if (status === 'completed') {
@@ -941,10 +957,11 @@ app.get("/api/appointments/available-slots", async (req, res) => {
     if (!doctorEmail || !appointmentDate) {
       return res.status(400).json({
         success: false,
-        message: "doctorEmail and appointmentDate are required"
+        message: "Doctor email and appointment date are required"
       });
     }
 
+    // All possible time slots
     const allSlots = [
       "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00",
       "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
@@ -954,34 +971,47 @@ app.get("/api/appointments/available-slots", async (req, res) => {
     const database = client.db("HealthcareDB");
     const appointmentsCollection = database.collection("appointments");
 
+    // Find all active appointments for this doctor and date
     const query = {
       doctorEmail: doctorEmail.toLowerCase(),
       appointmentDate,
-      status: { $in: ["pending", "confirmed"] }
+      status: { $in: ["pending", "confirmed", "approved"] } // Count all active statuses
     };
 
-    // When rescheduling, ignore the patient's current appointment so they can keep it
+    // If excluding an appointment (for rescheduling), remove it from count
     if (excludeAppointmentId) {
       query._id = { $ne: new ObjectId(excludeAppointmentId) };
     }
 
-    // Count active bookings per slot
-    const bookedAppointments = await appointmentsCollection
+    const activeAppointments = await appointmentsCollection
       .find(query, { projection: { appointmentTime: 1 } })
       .toArray();
 
-    const slotToCount = bookedAppointments.reduce((acc, a) => {
-      acc[a.appointmentTime] = (acc[a.appointmentTime] || 0) + 1;
-      return acc;
-    }, {});
+    // Count patients per time slot
+    const slotCounts = {};
+    activeAppointments.forEach(apt => {
+      const timeSlot = apt.appointmentTime;
+      slotCounts[timeSlot] = (slotCounts[timeSlot] || 0) + 1;
+    });
 
-    const MAX_PER_SLOT = 4;
-    const availableSlots = allSlots.filter(slot => (slotToCount[slot] || 0) < MAX_PER_SLOT);
+    // Filter out slots that have 4 or more patients
+    const availableSlots = allSlots.filter(slot => {
+      const patientCount = slotCounts[slot] || 0;
+      return patientCount < 4; // Only show slots with less than 4 patients
+    });
 
-    return res.status(200).json({ success: true, data: availableSlots });
+    res.json({
+      success: true,
+      data: availableSlots,
+      message: `Found ${availableSlots.length} available slots for ${appointmentDate}`
+    });
+
   } catch (error) {
-    console.error("Error fetching available slots:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch available slots", error: error.message });
+    console.error("Error getting available slots:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
 });
 
@@ -1435,6 +1465,43 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
     });
   }
 });
+
+// Function to resequence the queue after a patient is completed or cancelled
+async function resequenceQueue(doctorEmail, appointmentDate, appointmentTime) {
+  try {
+    const database = client.db("HealthcareDB");
+    const appointmentsCollection = database.collection("appointments");
+    
+    // Get all approved appointments for this doctor, date, and time slot
+    // Sort by creation time (booking order) to maintain FIFO
+    const activeAppointments = await appointmentsCollection.find({
+      doctorEmail: doctorEmail.toLowerCase(),
+      appointmentDate: appointmentDate,
+      appointmentTime: appointmentTime,
+      status: 'approved'
+    }).sort({ createdAt: 1 }).toArray();
+
+    // Resequence the serial numbers starting from 1
+    console.log(`🔄 Resequencing queue for ${doctorEmail} on ${appointmentDate} at ${appointmentTime}`);
+    console.log(`📊 Found ${activeAppointments.length} approved appointments to resequence`);
+    
+    for (let i = 0; i < activeAppointments.length; i++) {
+      const oldSerial = activeAppointments[i].serialNumber;
+      const newSerial = i + 1;
+      
+      await appointmentsCollection.updateOne(
+        { _id: activeAppointments[i]._id },
+        { $set: { serialNumber: newSerial } }
+      );
+      
+      console.log(`🔄 ${activeAppointments[i].patientName}: ${oldSerial} → ${newSerial}`);
+    }
+
+    console.log(`✅ Queue resequencing completed for ${doctorEmail} on ${appointmentDate} at ${appointmentTime}`);
+  } catch (error) {
+    console.error('Error resequencing queue:', error);
+  }
+}
 
 app.listen(port, () => {
   console.log(`Bhaai is running on port ${port}`);
