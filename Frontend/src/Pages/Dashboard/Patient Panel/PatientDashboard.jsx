@@ -79,13 +79,18 @@ export default function PatientDashboard() {
       )
       .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
       .slice(0, 4)
-      .map((a, index) => ({ 
-        name: a.patientName, 
-        serial: index + 1, // Ensure proper sequential numbering
-        status: a.status,
-        isMe: a.patientEmail === userData?.email,
-        estimatedTime: calculateEstimatedTime(myNext.appointmentTime, index + 1)
-      }));
+      .map((a) => {
+        const serialNumber = a.serialNumber || 1;
+        const estimatedTime = calculateEstimatedTime(myNext.appointmentTime, serialNumber);
+        
+        return { 
+          name: a.patientName, 
+          serial: serialNumber, // Use actual serialNumber from database
+          status: a.status,
+          isMe: a.patientEmail === userData?.email,
+          estimatedTime: estimatedTime
+        };
+      });
       setQueueEntries(sameSlot);
     } catch (e) {
       console.debug('Unable to build queue', e);
@@ -93,19 +98,21 @@ export default function PatientDashboard() {
     }
   }, [userData?.email]);
 
-  // Calculate estimated time for each patient (20 minutes per patient)
+  // Calculate estimated time for each patient (15 minutes per patient)
   const calculateEstimatedTime = (slotTime, serialNumber) => {
-    if (!slotTime) return '';
+    if (!slotTime || !serialNumber) return '';
     
     const [startTime] = slotTime.split('-');
-    const [hours, minutes] = startTime.split(':').map(Number);
+    const [hour, minute] = startTime.split(':').map(Number);
     
-    // Add 20 minutes for each patient before this one
-    const totalMinutes = hours * 60 + minutes + ((serialNumber - 1) * 20);
-    const newHours = Math.floor(totalMinutes / 60);
-    const newMinutes = totalMinutes % 60;
+    // Create a date object for proper time calculation
+    const startTimeDate = new Date();
+    startTimeDate.setHours(hour, minute, 0, 0);
     
-    return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+    // Each patient gets 15 minutes, calculate based on serial number
+    const patientTime = new Date(startTimeDate.getTime() + (serialNumber - 1) * 15 * 60 * 1000);
+    
+    return patientTime.toTimeString().slice(0, 5);
   };
 
   const handleCancelAppointment = async (appointmentId) => {
@@ -273,7 +280,7 @@ export default function PatientDashboard() {
                   Your next appointment: {queueEntries[0]?.appointmentDate} at {queueEntries[0]?.appointmentTime}
                 </p>
                 <ul className="space-y-2">
-                  {queueEntries.map((q, index) => (
+                  {queueEntries.map((q) => (
                     <li key={q.serial} className={`p-2 rounded ${
                       q.isMe ? 'bg-primary/10 border border-primary/20' : ''
                     }`}>
@@ -295,13 +302,13 @@ export default function PatientDashboard() {
                         </span>
                       </div>
                       <div className="ml-8 text-sm">
-                        {index === 0 ? (
-                          <span className="text-primary font-medium">🕐 Current: {q.estimatedTime}</span>
-                        ) : (
-                          <span className="text-gray-600">⏰ Estimated: {q.estimatedTime}</span>
-                        )}
+                        <span className={`font-medium ${
+                          q.serial === 1 ? 'text-primary' : 'text-gray-600'
+                        }`}>
+                          {q.serial === 1 ? `🕐 Current: ${q.estimatedTime}` : `⏰ Estimated: ${q.estimatedTime}`}
+                        </span>
                       </div>
-                      {index === 1 && (
+                      {q.serial === 2 && (
                         <div className="ml-8 mt-1">
                           <span className="badge badge-warning badge-xs">Next: Please be ready!</span>
                         </div>

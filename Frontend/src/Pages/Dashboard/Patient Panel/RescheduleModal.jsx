@@ -191,7 +191,12 @@ const RescheduleModal = ({ appointment, isOpen, onClose, onSuccess }) => {
             </select>
             {formData.appointmentDate && availableSlots.length === 0 && !loadingSlots && (
               <p className="text-sm text-error mt-2 italic">
-                No available slots for this date. Please select another date.
+                No available slots for this date. All slots are full (maximum 4 patients per slot). Please select another date.
+              </p>
+            )}
+            {formData.appointmentDate && availableSlots.length > 0 && (
+              <p className="text-sm text-success mt-2 italic">
+                ⏰ Each slot accommodates up to 4 patients (15 minutes each)
               </p>
             )}
           </div>

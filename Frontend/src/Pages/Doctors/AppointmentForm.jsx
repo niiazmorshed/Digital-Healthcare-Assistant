@@ -102,7 +102,7 @@ const AppointmentForm = ({ doctor, onClose }) => {
             const freeSlots = (availRes?.data || availRes?.slots || []);
             const isFree = Array.isArray(freeSlots) && freeSlots.includes(formData.appointmentTime);
             if (!isFree) {
-                toast.error('This time slot is no longer available. Please choose another time.');
+                toast.error('This time slot is full (maximum 4 patients per slot). Please choose another time.');
                 await fetchAvailableSlots(formData.appointmentDate);
                 setLoading(false);
                 return;
@@ -383,7 +383,17 @@ const AppointmentForm = ({ doctor, onClose }) => {
                                     marginTop: '0.5rem',
                                     fontStyle: 'italic'
                                 }}>
-                                    No available slots for this date. Please select another date.
+                                    No available slots for this date. All slots are full (maximum 4 patients per slot). Please select another date.
+                                </p>
+                            )}
+                            {formData.appointmentDate && availableSlots.length > 0 && (
+                                <p style={{ 
+                                    fontSize: '0.8rem', 
+                                    color: '#27ae60', 
+                                    marginTop: '0.5rem',
+                                    fontStyle: 'italic'
+                                }}>
+                                    ⏰ Each slot accommodates up to 4 patients (15 minutes each)
                                 </p>
                             )}
                         </div>

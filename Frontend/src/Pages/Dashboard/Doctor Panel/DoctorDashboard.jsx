@@ -12,10 +12,11 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('patientRecords');
   const [doctorProfile, setDoctorProfile] = useState(null);
   const [appointments, setAppointments] = useState([]);
-  const [patients, setPatients] = useState([]);
+
   const [patientCollection, setPatientCollection] = useState([]); // Data from patient collection
   const [statusFilter, setStatusFilter] = useState('all');
   const [queueEntries, setQueueEntries] = useState([]); // up to 4 entries for next pending slot
+  const [queueDateFilter, setQueueDateFilter] = useState('');
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [prescriptionModal, setPrescriptionModal] = useState({ isOpen: false, appointment: null });
@@ -61,7 +62,7 @@ const DoctorDashboard = () => {
       if (response.success) {
         const allAppointments = response.data || [];
         setAppointments(allAppointments);
-        setPatients(buildPatientsFromAppointments(allAppointments));
+
         setDoctorProfile({
           name: userData.displayName,
           email: userData.email,
@@ -123,47 +124,7 @@ const DoctorDashboard = () => {
     }
   }, [userData?.email]);
 
-  const handleUpdateAppointmentStatus = useCallback(async (appointmentId, newStatus) => {
-    try {
-      const response = await appointmentAPI.updateStatus(appointmentId, newStatus);
-      
-      if (response.success) {
-        if (newStatus === 'completed') {
-          // When marking as completed, save patient data to patient collection
-          try {
-            // Find the appointment to get patient details
-            const appointment = appointments.find(apt => apt._id === appointmentId);
-            console.log('🏥 Found appointment for completion:', appointment);
-            console.log('💊 Appointment prescription data:', appointment?.prescription);
-            
-            if (appointment) {
-              console.log('📋 Patient data will be handled by backend when status is updated');
-              console.log('✅ Backend should create patient record with prescription data');
-            }
-          } catch (patientError) {
-            console.error('🚨 Error in completion flow:', patientError);
-            toast.error('Appointment completed but there was an issue with patient data');
-          }
-          
-          toast.success(`Patient marked as completed and removed from queue - Data saved to patient collection`);
-        } else {
-          toast.success(`Appointment ${newStatus} successfully`);
-        }
-        
-        await fetchDoctorAppointments();
-        
-        // Refresh patient collection when marking as completed
-        if (newStatus === 'completed') {
-          await fetchPatientCollection();
-        }
-      } else {
-        toast.error('Failed to update appointment status');
-      }
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-      toast.error('Failed to update appointment status');
-    }
-  }, [fetchDoctorAppointments, fetchPatientCollection, appointments, userData]);
+
 
   // Approve appointment request
   const handleApproveRequest = useCallback(async (appointmentId) => {
@@ -316,6 +277,15 @@ const DoctorDashboard = () => {
 
 
   const pendingCount = useMemo(() => appointments.filter(a => (a.status || '').toLowerCase() === 'pending').length, [appointments]);
+  
+  // Get available dates for queue filtering (only dates with approved appointments)
+  const availableQueueDates = useMemo(() => {
+    const approvedAppointments = appointments.filter(a => 
+      ['approved'].includes((a.status || '').toLowerCase())
+    );
+    const dates = [...new Set(approvedAppointments.map(a => a.appointmentDate))];
+    return dates.sort(); // Ascending order (earliest first)
+  }, [appointments]);
   const countsByStatus = useMemo(() => {
     const counts = { all: appointments.length, approved: 0, completed: 0, cancelled: 0 };
     for (const a of appointments) {
@@ -344,49 +314,118 @@ const DoctorDashboard = () => {
     });
   }, [appointments]);
 
-  // Build queue entries from next active slot (approved only)
+  // Build queue entries from selected date (approved only)
   useEffect(() => {
+    console.log('🔍 Queue Date Filter:', queueDateFilter);
+    console.log('📅 Available Dates:', availableQueueDates);
+    
+    // Only show approved appointments in queue (completed patients are removed)
     const activeAppointments = sortedByQueue.filter(a => 
-      ['approved'].includes((a.status || '').toLowerCase())
+      ['approved'].includes((a.status || '').toLowerCase()) &&
+      a.appointmentDate === queueDateFilter
     );
+    
+    console.log('✅ Approved Appointments for date:', queueDateFilter, activeAppointments);
     
     if (activeAppointments.length === 0) {
       setQueueEntries([]);
       return;
     }
-    
-    // Find the next upcoming slot
-    const nextSlot = activeAppointments[0];
-    const sameSlot = activeAppointments.filter(a => 
-      a.appointmentDate === nextSlot.appointmentDate && 
-      a.appointmentTime === nextSlot.appointmentTime
-    )
-    .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
-    .slice(0, 4)
-    .map((a, index) => ({ 
-      name: a.patientName, 
-      serial: index + 1, // Ensure proper sequential numbering
-      status: a.status,
-      email: a.patientEmail,
-      estimatedTime: calculateEstimatedTime(nextSlot.appointmentTime, index + 1)
-    }));
-    
-    setQueueEntries(sameSlot);
-  }, [sortedByQueue]);
 
-  // Calculate estimated time for each patient (20 minutes per patient)
+    // Group appointments by time slot
+    const timeSlots = {};
+    activeAppointments.forEach(apt => {
+      const key = apt.appointmentTime;
+      if (!timeSlots[key]) {
+        timeSlots[key] = [];
+      }
+      timeSlots[key].push(apt);
+    });
+    
+    // Sort time slots and get the first one
+    const sortedTimeSlots = Object.keys(timeSlots).sort();
+    const firstTimeSlot = sortedTimeSlots[0];
+    
+    if (!firstTimeSlot) {
+      setQueueEntries([]);
+      return;
+    }
+    
+    // Sort by original serialNumber to maintain booking order, then reassign queue positions
+    const sameSlot = timeSlots[firstTimeSlot]
+      .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
+      .slice(0, 4)
+      .map((a, index) => {
+        // Recalculate queue position: index + 1 (1, 2, 3, 4)
+        const queuePosition = index + 1;
+        const estimatedTime = calculateEstimatedTime(a.appointmentTime, queuePosition);
+        
+        return {
+          name: a.patientName, 
+          serial: queuePosition, // Use recalculated queue position
+          status: a.status,
+          email: a.patientEmail,
+          appointmentDate: a.appointmentDate,
+          appointmentTime: a.appointmentTime,
+          estimatedTime: estimatedTime,
+          displayTime: queuePosition === 1 ? `Current: ${estimatedTime}` : `Estimated: ${estimatedTime}`,
+          queueStatus: queuePosition === 1 ? 'Current' : queuePosition === 2 ? 'Next: Please be ready!' : 'Waiting'
+        };
+      });
+    
+        console.log('🔄 Queue entries with recalculated positions:', sameSlot);
+    setQueueEntries(sameSlot);
+  }, [sortedByQueue, queueDateFilter]);
+
+  // Set initial queue date filter to earliest date with approved appointments
+  useEffect(() => {
+    if (availableQueueDates.length > 0 && !queueDateFilter) {
+      // Select the earliest date (first in sorted array)
+      setQueueDateFilter(availableQueueDates[0]);
+      console.log('🎯 Setting initial queue date to earliest:', availableQueueDates[0]);
+    }
+  }, [availableQueueDates, queueDateFilter]);
+
+  // Calculate estimated time for each patient (15 minutes per patient)
   const calculateEstimatedTime = (slotTime, serialNumber) => {
-    if (!slotTime) return '';
+    if (!slotTime || !serialNumber) return '';
     
     const [startTime] = slotTime.split('-');
-    const [hours, minutes] = startTime.split(':').map(Number);
+    const [hour, minute] = startTime.split(':').map(Number);
     
-    // Add 20 minutes for each patient before this one
-    const totalMinutes = hours * 60 + minutes + ((serialNumber - 1) * 20);
-    const newHours = Math.floor(totalMinutes / 60);
-    const newMinutes = totalMinutes % 60;
+    // Create a date object for proper time calculation
+    const startTimeDate = new Date();
+    startTimeDate.setHours(hour, minute, 0, 0);
     
-    return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+    // Each patient gets 15 minutes, calculate based on serial number
+    const patientTime = new Date(startTimeDate.getTime() + (serialNumber - 1) * 15 * 60 * 1000);
+    
+    return patientTime.toTimeString().slice(0, 5);
+  };
+
+  // Calculate current queue position for an appointment
+  const getCurrentQueuePosition = (appointment) => {
+    // Only calculate for approved appointments
+    if (appointment.status !== 'approved') {
+      return appointment.serialNumber || '-';
+    }
+
+    // Get all approved appointments for the same date and time slot
+    const sameSlotAppointments = appointments.filter(a => 
+      a.status === 'approved' &&
+      a.appointmentDate === appointment.appointmentDate &&
+      a.appointmentTime === appointment.appointmentTime
+    );
+
+    // Sort by original booking order
+    const sortedAppointments = sameSlotAppointments.sort((a, b) => 
+      (a.serialNumber || 0) - (b.serialNumber || 0)
+    );
+
+    // Find the current position (index + 1)
+    const currentPosition = sortedAppointments.findIndex(a => a._id === appointment._id) + 1;
+    
+    return currentPosition > 0 ? currentPosition : appointment.serialNumber || '-';
   };
 
   const filteredAppointments = useMemo(() => {
@@ -467,7 +506,7 @@ const DoctorDashboard = () => {
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-sm opacity-80">Each time slot can accommodate up to 4 patients. Patients receive serial numbers (1–4) based on booking order.</p>
+            <p className="mt-4 text-sm opacity-80">Each time slot can accommodate up to 4 patients (15 minutes each). Patients receive serial numbers (1–4) based on booking order.</p>
           </div>
         </div>
       )}
@@ -523,44 +562,78 @@ const DoctorDashboard = () => {
 
       {activeTab === 'appointments' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="col-span-1 card bg-base-200 shadow">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="col-span-1 lg:col-span-2 card bg-base-200 shadow">
               <div className="card-body">
-                <h3 className="card-title">Current Queue</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="card-title">Current Queue</h3>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Date:</label>
+                    <select 
+                      value={queueDateFilter}
+                      onChange={(e) => {
+                        console.log('🎯 Date selected:', e.target.value);
+                        setQueueDateFilter(e.target.value);
+                      }}
+                      className="select select-sm select-bordered"
+                    >
+                      {availableQueueDates.length > 0 ? (
+                        availableQueueDates.map(date => (
+                          <option key={date} value={date}>
+                            {new Date(date).toLocaleDateString('en-US', { 
+                              weekday: 'short', 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })} ({appointments.filter(a => a.appointmentDate === date && a.status === 'approved').length} approved)
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">No approved appointments</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
                 {queueEntries.length === 0 ? (
-                  <p className="opacity-70 text-sm">No active queue for upcoming appointments.</p>
+                  <div className="text-center py-4">
+                    <p className="opacity-70 text-sm mb-2">No approved appointments for {queueDateFilter}.</p>
+                    <p className="text-xs opacity-50">Only approved patients appear in queue.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm opacity-70 mb-2">
-                      Next slot: {queueEntries[0]?.appointmentDate} at {queueEntries[0]?.appointmentTime}
-                    </p>
+                    <div className="bg-base-100 p-3 rounded-lg border">
+                      <p className="text-sm font-medium mb-1">📅 Date: {queueEntries[0]?.appointmentDate}</p>
+                      <p className="text-sm opacity-70">⏰ Time Slot: {queueEntries[0]?.appointmentTime}</p>
+                    </div>
                     <ul className="space-y-2">
-                      {queueEntries.map((q, index) => (
-                        <li key={q.serial} className={`p-2 rounded ${
-                          index === 0 ? 'bg-primary/10 border border-primary/20' : ''
+                      {queueEntries.map((q) => (
+                        <li key={q.serial} className={`p-3 rounded-lg ${
+                          q.serial === 1 ? 'bg-primary/10 border border-primary/20' : 'bg-base-100 border'
                         }`}>
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
-                              <span className="badge badge-primary">{q.serial}</span>
+                              <span className="badge badge-primary text-sm">{q.serial}</span>
                               <span className="font-medium">{q.name}</span>
                             </div>
                             <span className={`badge badge-xs ${
                               q.status === 'approved' ? 'badge-info' : 
+                              q.status === 'completed' ? 'badge-success' :
+                              q.status === 'cancelled' ? 'badge-error' :
                               'badge-warning'
                             }`}>
                               {q.status}
                             </span>
                           </div>
                           <div className="ml-8 text-sm">
-                            {index === 0 ? (
-                              <span className="text-primary font-medium">🕐 Current: {q.estimatedTime}</span>
-                            ) : (
-                              <span className="text-gray-600">⏰ Estimated: {q.estimatedTime}</span>
-                            )}
+                            <span className={`font-medium ${
+                              q.serial === 1 ? 'text-primary' : 'text-gray-600'
+                            }`}>
+                              {q.displayTime}
+                            </span>
                           </div>
-                          {index === 1 && (
+                          {q.serial === 2 && (
                             <div className="ml-8 mt-1">
-                              <span className="badge badge-warning badge-xs">Next: Please be ready!</span>
+                              <span className="badge badge-warning badge-xs">{q.queueStatus}</span>
                             </div>
                           )}
                         </li>
@@ -570,7 +643,7 @@ const DoctorDashboard = () => {
                 )}
               </div>
             </div>
-            <div className="col-span-1 md:col-span-2"></div>
+            <div className="col-span-1 lg:col-span-2"></div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -603,12 +676,18 @@ const DoctorDashboard = () => {
                   filteredAppointments.map((apt) => {
                     const id = apt._id;
                     const status = (apt.status || '').toLowerCase();
+                    const currentQueuePosition = getCurrentQueuePosition(apt);
                     return (
                       <tr key={id}>
-                        <td>{apt.serialNumber || '-'}</td>
+                        <td>{currentQueuePosition}</td>
                         <td>{apt.patientName}</td>
                         <td>{apt.appointmentDate}</td>
-                        <td>{apt.appointmentTime}</td>
+                        <td>
+                          {apt.status === 'approved' 
+                            ? calculateEstimatedTime(apt.appointmentTime, currentQueuePosition)
+                            : apt.appointmentTime
+                          }
+                        </td>
                         <td>{apt.symptoms || '-'}</td>
                         <td>
                           <span className={`badge ${
@@ -728,7 +807,7 @@ const DoctorDashboard = () => {
       {patientProfileModal.isOpen && patientProfileModal.patient && (
         <div className="modal modal-open">
           <div className="modal-box max-w-4xl">
-            <h3 className="font-bold text-lg mb-4">{patientProfileModal.patient.name}'s Profile</h3>
+            <h3 className="font-bold text-lg mb-4">{patientProfileModal.patient.name}&apos;s Profile</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Patient Info */}

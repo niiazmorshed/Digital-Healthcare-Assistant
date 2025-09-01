@@ -46,18 +46,18 @@ const DashboardRedirect = () => {
           return;
         }
 
-        const apiBase = import.meta?.env?.VITE_API_URL || '';
+        const apiBase = import.meta?.env?.VITE_API_URL || "";
         const client = axios.create({ baseURL: apiBase, headers });
-        
+
         // Try to get user profile to determine role
-        const res = await client.get('/api/auth/profile');
+        const res = await client.get("/api/auth/profile");
         if (res?.data?.role) {
           if (!cancelled) {
             setRole(res.data.role);
           }
         }
       } catch (err) {
-        console.error('Failed to fetch user role:', err);
+        console.error("Failed to fetch user role:", err);
         // Fallback: try to determine role from cached data
         const roleStorageKey = `role:${user.email}`;
         const cached = localStorage.getItem(roleStorageKey);
@@ -93,16 +93,16 @@ const DashboardRedirect = () => {
   }
 
   // Redirect based on role
-  if (role === 'doctor') {
+  if (role === "doctor") {
     // For doctors, redirect to their specific route based on email
     const email = user?.email;
     if (email) {
       // Map email to route slug
       const emailToSlug = {
-        'john.smith@healthcare.com': 'john-smith',
-        'sarah.wilson@healthcare.com': 'sarah-wilson', 
-        'michael.brown@healthcare.com': 'michael-brown',
-        'emily.davis@healthcare.com': 'emily-davis'
+        "john.smith@healthcare.com": "john-smith",
+        "sarah.wilson@healthcare.com": "sarah-wilson",
+        "michael.brown@healthcare.com": "michael-brown",
+        "emily.davis@healthcare.com": "emily-davis",
       };
       const slug = emailToSlug[email];
       if (slug) {
@@ -111,9 +111,9 @@ const DashboardRedirect = () => {
     }
     // Fallback to general doctor route
     return <Navigate to="/dashboard/doctor" replace />;
-  } else if (role === 'patient') {
+  } else if (role === "patient") {
     return <Navigate to="/dashboard/patient" replace />;
-  } else if (role === 'admin') {
+  } else if (role === "admin") {
     return <Navigate to="/dashboard/admin" replace />;
   } else {
     // Fallback to patient dashboard if role cannot be determined
@@ -148,9 +148,13 @@ const router = createBrowserRouter([
         element: <AboutUs />,
       },
       {
-        path : "/doctors",
-        element : <Doctors></Doctors>
-      }
+        path: "/doctors",
+        element: (
+          <PrivateRoute>
+            <Doctors></Doctors>
+          </PrivateRoute>
+        ),
+      },
     ],
   },
   {
@@ -182,7 +186,7 @@ const router = createBrowserRouter([
         element: <DoctorDashboard></DoctorDashboard>, // Admin can use doctor dashboard for now
       },
     ],
-  }
+  },
 ]);
 
 export default router;
