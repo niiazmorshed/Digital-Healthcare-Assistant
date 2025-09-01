@@ -284,6 +284,12 @@ const DoctorDashboard = () => {
       ['approved'].includes((a.status || '').toLowerCase())
     );
     const dates = [...new Set(approvedAppointments.map(a => a.appointmentDate))];
+    console.log('📅 Available queue dates calculation:', {
+      totalAppointments: appointments.length,
+      approvedAppointments: approvedAppointments.length,
+      approvedDates: dates,
+      allAppointments: appointments.map(a => ({ name: a.patientName, date: a.appointmentDate, status: a.status, serial: a.serialNumber }))
+    });
     return dates.sort(); // Ascending order (earliest first)
   }, [appointments]);
   const countsByStatus = useMemo(() => {
@@ -318,6 +324,7 @@ const DoctorDashboard = () => {
   useEffect(() => {
     console.log('🔍 Queue Date Filter:', queueDateFilter);
     console.log('📅 Available Dates:', availableQueueDates);
+    console.log('📊 All appointments:', appointments);
     
     // Only show approved appointments in queue (completed patients are removed)
     const activeAppointments = sortedByQueue.filter(a => 
@@ -326,6 +333,9 @@ const DoctorDashboard = () => {
     );
     
     console.log('✅ Approved Appointments for date:', queueDateFilter, activeAppointments);
+    console.log('🔍 Filtered appointments by status and date:', sortedByQueue.filter(a => 
+      ['approved'].includes((a.status || '').toLowerCase())
+    ));
     
     if (activeAppointments.length === 0) {
       setQueueEntries([]);
@@ -342,38 +352,44 @@ const DoctorDashboard = () => {
       timeSlots[key].push(apt);
     });
     
+    console.log('⏰ Time slots found:', timeSlots);
+    
     // Sort time slots and get the first one
     const sortedTimeSlots = Object.keys(timeSlots).sort();
     const firstTimeSlot = sortedTimeSlots[0];
+    
+    console.log('🎯 First time slot:', firstTimeSlot);
     
     if (!firstTimeSlot) {
       setQueueEntries([]);
       return;
     }
     
-    // Sort by original serialNumber to maintain booking order, then reassign queue positions
+    // Sort by original serialNumber to maintain booking order.
+    // Preserve original serial/time; only the highlighting (Current/Next) is based on current position in the displayed queue.
     const sameSlot = timeSlots[firstTimeSlot]
       .sort((a, b) => (a.serialNumber || 0) - (b.serialNumber || 0))
       .slice(0, 4)
       .map((a, index) => {
-        // Recalculate queue position: index + 1 (1, 2, 3, 4)
-        const queuePosition = index + 1;
-        const estimatedTime = calculateEstimatedTime(a.appointmentTime, queuePosition);
-        
+        const serialNumber = a.serialNumber || 1; // preserve original serial from DB
+        const estimatedTime = calculateEstimatedTime(a.appointmentTime, serialNumber); // time based on original serial
+
         return {
-          name: a.patientName, 
-          serial: queuePosition, // Use recalculated queue position
+          name: a.patientName,
+          serial: serialNumber, // display original serial
           status: a.status,
           email: a.patientEmail,
           appointmentDate: a.appointmentDate,
           appointmentTime: a.appointmentTime,
-          estimatedTime: estimatedTime,
-          displayTime: queuePosition === 1 ? `Current: ${estimatedTime}` : `Estimated: ${estimatedTime}`,
-          queueStatus: queuePosition === 1 ? 'Current' : queuePosition === 2 ? 'Next: Please be ready!' : 'Waiting'
+          estimatedTime,
+          isCurrent: index === 0,
+          isNext: index === 1,
+          displayTime: index === 0 ? `Current: ${estimatedTime}` : `Estimated: ${estimatedTime}`,
+          queueStatus: index === 1 ? 'Next: Please be ready!' : 'Waiting'
         };
       });
-    
-        console.log('🔄 Queue entries with recalculated positions:', sameSlot);
+
+    console.log('🔄 Queue entries (preserving original serial/time):', sameSlot);
     setQueueEntries(sameSlot);
   }, [sortedByQueue, queueDateFilter]);
 
@@ -608,7 +624,7 @@ const DoctorDashboard = () => {
                     <ul className="space-y-2">
                       {queueEntries.map((q) => (
                         <li key={q.serial} className={`p-3 rounded-lg ${
-                          q.serial === 1 ? 'bg-primary/10 border border-primary/20' : 'bg-base-100 border'
+                          q.isCurrent ? 'bg-primary/10 border border-primary/20' : 'bg-base-100 border'
                         }`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
@@ -626,12 +642,12 @@ const DoctorDashboard = () => {
                           </div>
                           <div className="ml-8 text-sm">
                             <span className={`font-medium ${
-                              q.serial === 1 ? 'text-primary' : 'text-gray-600'
+                              q.isCurrent ? 'text-primary' : 'text-gray-600'
                             }`}>
                               {q.displayTime}
                             </span>
                           </div>
-                          {q.serial === 2 && (
+                          {q.isNext && (
                             <div className="ml-8 mt-1">
                               <span className="badge badge-warning badge-xs">{q.queueStatus}</span>
                             </div>
@@ -679,14 +695,14 @@ const DoctorDashboard = () => {
                     const currentQueuePosition = getCurrentQueuePosition(apt);
                     return (
                       <tr key={id}>
-                        <td>{currentQueuePosition}</td>
+                        {/* Serial: show original serial for all rows. If needed, fall back to '-' */}
+                        <td>{apt.serialNumber || '-'}</td>
                         <td>{apt.patientName}</td>
                         <td>{apt.appointmentDate}</td>
                         <td>
-                          {apt.status === 'approved' 
-                            ? calculateEstimatedTime(apt.appointmentTime, currentQueuePosition)
-                            : apt.appointmentTime
-                          }
+                          {apt.status === 'approved'
+                            ? calculateEstimatedTime(apt.appointmentTime, apt.serialNumber || 1)
+                            : apt.appointmentTime}
                         </td>
                         <td>{apt.symptoms || '-'}</td>
                         <td>
