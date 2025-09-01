@@ -234,7 +234,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Authors
 
-- **Niaz Morshed** - _Initial work_ - [YourGitHub](https://github.com/niiazmorshed)
+- **Niaz Morshed** -(https://github.com/niiazmorshed)
 
 ## 🙏 Acknowledgments
 
