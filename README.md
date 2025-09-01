@@ -234,7 +234,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Authors
 
-- **Your Name** - _Initial work_ - [YourGitHub](https://github.com/yourusername)
+- **Niaz Morshed** - _Initial work_ - [YourGitHub](https://github.com/niiazmorshed)
 
 ## 🙏 Acknowledgments
 
@@ -249,4 +249,4 @@ If you have any questions or need support, please open an issue on GitHub or con
 
 ---
 
-**Built with ❤️ for better healthcare management**
+**Built with ❤️ for better healthcare management by Niaz Morshed and Yasha Ehtesham**
