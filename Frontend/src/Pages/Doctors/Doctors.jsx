@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Footer from '../../Footer/Footer';
 import { doctorAPI } from '../../services/api';
 import AppointmentForm from './AppointmentForm';
 import DoctorCard from './DoctorCard';

@@ -152,7 +152,12 @@ const DoctorDashboard = () => {
     try {
       const response = await appointmentAPI.rejectRequest(appointmentId, reason);
       if (response.success) {
-        toast.success('Appointment request rejected');
+        // Show a more informative toast with the rejection reason
+        if (reason && reason !== 'No reason provided') {
+          toast.success(`Appointment request rejected. Reason: ${reason}`);
+        } else {
+          toast.success('Appointment request rejected');
+        }
         await fetchPendingRequests();
       } else {
         toast.error('Failed to reject request');

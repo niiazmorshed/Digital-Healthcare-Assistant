@@ -131,16 +131,17 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
                     style={{
                         width: '100%',
                         padding: '0.75rem',
-                        background: '#2563eb',
+                        background: '#0066cc',
                         color: 'white',
                         border: 'none',
                         borderRadius: '10px',
                         cursor: 'pointer',
                         fontSize: '0.95rem',
-                        fontWeight: 700
+                        fontWeight: 700,
+                        transition: 'background-color 0.2s ease'
                     }}
-                    onMouseOver={(e) => e.target.style.background = '#1d4ed8'}
-                    onMouseOut={(e) => e.target.style.background = '#2563eb'}
+                    onMouseOver={(e) => e.target.style.background = '#0052a3'}
+                    onMouseOut={(e) => e.target.style.background = '#0066cc'}
                 >
                     Book Appointment
                 </button>

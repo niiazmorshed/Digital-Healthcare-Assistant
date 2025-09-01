@@ -162,11 +162,6 @@ const Navbar = () => {
           <a>Doctors</a>
         </li>
       </NavLink>
-      <NavLink to="/review" className={linkClass}>
-        <li>
-          <a>Review</a>
-        </li>
-      </NavLink>
       <NavLink to="/aboutus" className={linkClass}>
         <li>
           <a>About Us</a>

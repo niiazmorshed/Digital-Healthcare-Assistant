@@ -6,7 +6,6 @@ import Error from "../Error/Error";
 import UseAuth from "../Hooks/UseAuth";
 import Dashboard from "../Layout/Dashboard";
 import Roots from "../Layout/Roots";
-import Review from "../Our Review/Review";
 import DoctorDashboard from "../Pages/Dashboard/Doctor Panel/DoctorDashboard";
 import PatientDashboard from "../Pages/Dashboard/Patient Panel/PatientDashboard";
 import Doctors from "../Pages/Doctors/Doctors";
@@ -138,10 +137,6 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <Register />,
-      },
-      {
-        path: "/review",
-        element: <Review />,
       },
       {
         path: "/aboutus",
