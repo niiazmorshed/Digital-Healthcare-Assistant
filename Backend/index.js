@@ -36,7 +36,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
 app.get("/", (req, res) => {
   res.send("Healthcare API Running Successfully!");
 });
@@ -545,7 +544,7 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
       });
     }
     
-    // Count ONLY approved appointments for serial number assignment
+    // Count approved appointments for this slot
     const approvedCount = await appointmentsCollection.countDocuments({
       doctorEmail: appointmentRequest.doctorEmail,
       appointmentDate: appointmentRequest.appointmentDate,
@@ -553,12 +552,27 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
       status: 'approved'
     });
     
-    // Assign the next serial number based on approved count
+    // Assign the next serial number
     const serialNumber = approvedCount + 1;
     
     console.log(`📋 Approving appointment for ${appointmentRequest.patientName}`);
     console.log(`🔢 Current approved count: ${approvedCount}, New serial number: ${serialNumber}`);
+    console.log(`📍 Slot details: ${appointmentRequest.doctorEmail} on ${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`);
     
+    // Debug: Show all approved appointments for this slot
+    const approvedAppointments = await appointmentsCollection.find({
+      doctorEmail: appointmentRequest.doctorEmail,
+      appointmentDate: appointmentRequest.appointmentDate,
+      appointmentTime: appointmentRequest.appointmentTime,
+      status: 'approved'
+    }).toArray();
+    
+    console.log(`📊 Current approved appointments in this slot:`, approvedAppointments.length);
+    approvedAppointments.forEach(apt => {
+      console.log(`  - ${apt.patientName}: Serial ${apt.serialNumber}`);
+    });
+    
+    // Update the appointment status and assign serial number
     await appointmentsCollection.updateOne(
       { _id: new ObjectId(appointmentId) },
       { 
@@ -712,6 +726,12 @@ app.get("/api/appointments/doctor/:doctorEmail", async (req, res) => {
       doctorEmail: doctorEmail.toLowerCase()
     }).sort({ appointmentDate: 1, appointmentTime: 1, serialNumber: 1 }).toArray();
     
+    // Debug: Log the appointments being returned
+    console.log(`🔍 Doctor ${doctorEmail} appointments:`, appointments.length);
+    appointments.forEach(apt => {
+      console.log(`  - ${apt.patientName}: ${apt.status}, Serial: ${apt.serialNumber}, Date: ${apt.appointmentDate}, Time: ${apt.appointmentTime}`);
+    });
+    
     res.status(200).json({
       success: true,
       message: "Appointments retrieved successfully",
@@ -790,10 +810,7 @@ app.put("/api/appointments/:appointmentId/status", async (req, res) => {
       }
     );
 
-    // If status is 'completed' or 'cancelled', resequence the queue
-    if (status === 'completed' || status === 'cancelled') {
-      await resequenceQueue(original.doctorEmail, original.appointmentDate, original.appointmentTime);
-    }
+    // No resequencing needed - preserve original serial numbers
     
     // If status is 'completed', create patient record
     if (status === 'completed') {
@@ -908,29 +925,7 @@ app.put("/api/appointments/:appointmentId/status", async (req, res) => {
       }
     }
     
-    // If cancelled, resequence serial numbers for the same slot
-    if (status === 'cancelled') {
-      const activeStatuses = ['pending', 'confirmed'];
-      const sameSlotActive = await appointmentsCollection
-        .find({
-          doctorEmail: original.doctorEmail,
-          appointmentDate: original.appointmentDate,
-          appointmentTime: original.appointmentTime,
-          status: { $in: activeStatuses }
-        })
-        .sort({ createdAt: 1, _id: 1 })
-        .toArray();
-      
-      const bulk = sameSlotActive.map((apt, idx) => ({
-        updateOne: {
-          filter: { _id: apt._id },
-          update: { $set: { serialNumber: idx + 1 } }
-        }
-      }));
-      if (bulk.length) {
-        await appointmentsCollection.bulkWrite(bulk);
-      }
-    }
+    // No resequencing for cancelled appointments - preserve original serial numbers
     
     const updatedAppointment = await appointmentsCollection.findOne({ _id: new ObjectId(appointmentId) });
     
@@ -1467,6 +1462,8 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
 });
 
 // Function to resequence the queue after a patient is completed or cancelled
+// COMMENTED OUT: No longer needed as we preserve original serial numbers
+/*
 async function resequenceQueue(doctorEmail, appointmentDate, appointmentTime) {
   try {
     const database = client.db("HealthcareDB");
@@ -1502,6 +1499,7 @@ async function resequenceQueue(doctorEmail, appointmentDate, appointmentTime) {
     console.error('Error resequencing queue:', error);
   }
 }
+*/
 
 app.listen(port, () => {
   console.log(`Bhaai is running on port ${port}`);
