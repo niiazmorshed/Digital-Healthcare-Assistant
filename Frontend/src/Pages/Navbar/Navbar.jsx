@@ -119,7 +119,36 @@ const Navbar = () => {
         navigate("/login");
         return;
       }
-      navigate("/dashboard");
+
+      // Redirect based on role
+      if (role === "doctor") {
+        // For doctors, redirect to their specific route based on email
+        const email = user?.email;
+        if (email) {
+          // Map email to route slug
+          const emailToSlug = {
+            "john.smith@healthcare.com": "john-smith",
+            "sarah.wilson@healthcare.com": "sarah-wilson",
+            "michael.brown@healthcare.com": "michael-brown",
+            "emily.davis@healthcare.com": "emily-davis",
+            "fahim@healthcare.com": "fahim-farhan", // Add Fahim's mapping
+          };
+          const slug = emailToSlug[email];
+          if (slug) {
+            navigate(`/dashboard/doctor/${slug}`);
+            return;
+          }
+        }
+        // Fallback to general doctor route
+        navigate("/dashboard/doctor");
+      } else if (role === "patient") {
+        navigate("/dashboard/patient");
+      } else if (role === "admin") {
+        navigate("/dashboard/admin");
+      } else {
+        // Fallback to patient dashboard if role cannot be determined
+        navigate("/dashboard/patient");
+      }
     } catch (e) {
       console.error(e);
       toast.error("Could not open dashboard. Please try again.");
@@ -127,7 +156,7 @@ const Navbar = () => {
     } finally {
       setResolving(false);
     }
-  }, [fetchIdToken, navigate]);
+  }, [fetchIdToken, navigate, role, user?.email]);
 
   const handleLogOut = () => {
     logOut()
@@ -157,11 +186,13 @@ const Navbar = () => {
           <a>Home</a>
         </li>
       </NavLink>
-      <NavLink to="/doctors" className={linkClass}>
-        <li>
-          <a>Doctors</a>
-        </li>
-      </NavLink>
+      {role === "patient" && (
+        <NavLink to="/doctors" className={linkClass}>
+          <li>
+            <a>Doctors</a>
+          </li>
+        </NavLink>
+      )}
       <NavLink to="/aboutus" className={linkClass}>
         <li>
           <a>About Us</a>
@@ -169,6 +200,10 @@ const Navbar = () => {
       </NavLink>
     </>
   );
+  
+  // Debug logging
+  console.log("Navbar - Current role:", role);
+  console.log("Navbar - Should show Doctors link:", role === "patient");
   return (
     <div className="navbar fixed bg-gray-800 z-10 top-0 shadow-md">
       <div className="navbar-start">

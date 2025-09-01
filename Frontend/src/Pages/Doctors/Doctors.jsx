@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import Footer from '../../Footer/Footer';
 import { doctorAPI } from '../../services/api';
 import AppointmentForm from './AppointmentForm';
 import DoctorCard from './DoctorCard';
 
 const Doctors = () => {
+    console.log("Doctors component is rendering!");
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

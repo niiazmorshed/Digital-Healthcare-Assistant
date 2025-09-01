@@ -12,8 +12,8 @@ import Doctors from "../Pages/Doctors/Doctors";
 import Home from "../Pages/Home/Home";
 import Login from "../Pages/Login/Login";
 import Register from "../Pages/Register/Register";
+import PatientOnlyRoute from "./PatientOnlyRoute";
 import PrivateRoute from "./PrivateRoute";
-// import Doctors from "../Pages/Doctors/Doctors";
 
 // Component to handle automatic dashboard redirection based on user role
 const DashboardRedirect = () => {
@@ -145,10 +145,10 @@ const router = createBrowserRouter([
       {
         path: "/doctors",
         element: (
-          <PrivateRoute>
+          <PatientOnlyRoute>
             <Doctors></Doctors>
-          </PrivateRoute>
-        ),
+          </PatientOnlyRoute>
+        ), 
       },
     ],
   },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import UseAuth from '../../../Hooks/UseAuth';
 import { appointmentAPI, doctorAPI } from '../../../services/api';
 import PrescriptionViewModal from './PrescriptionViewModal';
@@ -156,6 +156,11 @@ export default function PatientDashboard() {
     setPrescriptionModal({ isOpen: false, appointment: null });
   };
 
+  const handlePayment = () => {
+    console.log('Payment button clicked!'); // Debug log
+    toast.success('Payment completed');
+  };
+
   const getDoctorName = (doctorEmail) => {
     if (!doctorEmail) return 'N/A';
     const doctor = doctors[doctorEmail];
@@ -249,7 +254,6 @@ export default function PatientDashboard() {
                 <p><span className="font-semibold">Member Since:</span> {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
-            <p className="mt-3 text-sm opacity-80">Queue system: Each time slot allows up to 4 patients. Your serial is shown with each appointment.</p>
           </div>
         </div>
 
@@ -413,19 +417,22 @@ export default function PatientDashboard() {
                             </button>
                           </div>
                         )}
-                                                 {status === 'completed' && (
-                           <div className="flex gap-1">
-                             <button className="btn btn-xs btn-outline btn-success">
-                               Payment
-                             </button>
-                             <button 
-                               className="btn btn-xs btn-outline btn-info"
-                               onClick={() => handleViewPrescription(appt)}
-                             >
-                               View Prescription
-                             </button>
-                           </div>
-                         )}
+                                                                         {status === 'completed' && (
+                          <div className="flex gap-1">
+                            <button 
+                              className="btn btn-xs btn-outline btn-success"
+                              onClick={handlePayment}
+                            >
+                              Payment
+                            </button>
+                            <button 
+                              className="btn btn-xs btn-outline btn-info"
+                              onClick={() => handleViewPrescription(appt)}
+                            >
+                              View Prescription
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -439,7 +446,6 @@ export default function PatientDashboard() {
       {/* Doctor Details Section */}
       {appointments.length > 0 && (
         <section>
-          <h3 className="text-lg font-semibold mb-3">My Doctors</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.values(doctors).filter(doctor => 
               appointments.some(appt => appt.doctorEmail === doctor.email)
@@ -544,6 +550,9 @@ export default function PatientDashboard() {
         isOpen={prescriptionModal.isOpen}
         onClose={closePrescriptionModal}
       />
+
+      {/* Toast Notifications */}
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ const DoctorDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('patientRecords');
+  const [activeTab, setActiveTab] = useState('profile');
   const [doctorProfile, setDoctorProfile] = useState(null);
   const [appointments, setAppointments] = useState([]);
 
@@ -527,7 +527,6 @@ const DoctorDashboard = () => {
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-sm opacity-80">Each time slot can accommodate up to 4 patients (15 minutes each). Patients receive serial numbers (1–4) based on booking order.</p>
           </div>
         </div>
       )}
