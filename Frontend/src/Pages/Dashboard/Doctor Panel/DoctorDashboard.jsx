@@ -234,17 +234,17 @@ const DoctorDashboard = () => {
         "📊 Appointment status:",
         prescriptionModal.appointment.status
       );
-      console.log("🌐 API Base URL:", "digital-healthcare-assistant.vercel.app/api");
+      console.log("🌐 API Base URL:", "https://backend-tawny-chi.vercel.app/api");
       console.log(
         "🔗 Full API URL:",
-        `digital-healthcare-assistant.vercel.app/api/appointments/${prescriptionModal.appointment._id}/prescription`
+        `https://backend-tawny-chi.vercel.app/api/appointments/${prescriptionModal.appointment._id}/prescription`
       );
 
       // Step 1: Add prescription to appointment
       console.log("🌐 Step 1: Adding prescription to appointment...");
       console.log(
         "📡 API URL:",
-        `digital-healthcare-assistant.vercel.app/api/appointments/${prescriptionModal.appointment._id}/prescription`
+        `https://backend-tawny-chi.vercel.app/api/appointments/${prescriptionModal.appointment._id}/prescription`
       );
       console.log("📤 Request payload:", prescriptionData);
 
