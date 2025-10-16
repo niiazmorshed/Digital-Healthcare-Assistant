@@ -106,8 +106,8 @@ const Bannner = () => {
     >
       <SwiperSlide>
         <section className="banner1">
-          <section className="pt-32">
-            <div className="md: flex flex-col justify-center text-center items-center gap-6 md:pt-6 min-h-screen">
+          <section className="pt-24 md:pt-20">
+            <div className="md: flex flex-col justify-center text-center items-center gap-6 md:pt-0 min-h-[70vh]">
               <div className="animate__animated animate__lightSpeedInLeft flex gap-6">
                 {shouldShowFindDoctorsButton && (
                   <NavLink to="/doctors">

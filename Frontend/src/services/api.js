@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://backend-tawny-chi.vercel.app/api';
-
+// Prefer env var in production, fallback to localhost for dev
+const API_BASE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL)
+    ? import.meta.env.VITE_API_BASE_URL
+    : 'http://localhost:5000/api';
+// Note: Set VITE_API_BASE_URL to your backend, e.g. https://your-backend-domain.com/api
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

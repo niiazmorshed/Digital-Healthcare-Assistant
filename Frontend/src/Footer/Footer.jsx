@@ -12,10 +12,10 @@ const Footer = () => {
       <div>
         <h1 className="text-xl font-semibold">Location</h1>
         <p className="text-lg font-normal">
-          Mohammadpur, <br /> Dhaka Bangladesh
+          Merul Badda, <br /> Dhaka Bangladesh
         </p>
         <p className="text-lg font-normal">Phone - 01734804733</p>
-        <p className="text-lg font-normal">Mail- yasha.ehtesham@g.bracu.ac.bd</p>
+        <p className="text-lg font-normal">Mail- niazmorshedrafi@gmail.com</p>
       </div>
       <div className="text-xl font-semibold">
         <p>Follow Us</p>

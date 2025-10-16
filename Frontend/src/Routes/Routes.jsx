@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import AboutUs from "../About Us/AboutUs";
 import Error from "../Error/Error";
 import UseAuth from "../Hooks/UseAuth";
 import Dashboard from "../Layout/Dashboard";
@@ -137,10 +136,6 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <Register />,
-      },
-      {
-        path: "/aboutus",
-        element: <AboutUs />,
       },
       {
         path: "/doctors",

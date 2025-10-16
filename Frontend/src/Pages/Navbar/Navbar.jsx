@@ -181,11 +181,7 @@ const Navbar = () => {
 
   const navLinks = (
     <>
-      <NavLink to="/" className={linkClass}>
-        <li>
-          <a>Home</a>
-        </li>
-      </NavLink>
+      {/* Home link removed */}
       {role === "patient" && (
         <NavLink to="/doctors" className={linkClass}>
           <li>
@@ -193,11 +189,7 @@ const Navbar = () => {
           </li>
         </NavLink>
       )}
-      <NavLink to="/aboutus" className={linkClass}>
-        <li>
-          <a>About Us</a>
-        </li>
-      </NavLink>
+      {/* About Us route removed */}
     </>
   );
   

@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import toast, { Toaster } from "react-hot-toast";
 import { FaGithub, FaGoogle, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import Dark from "../../Dark Mode/Dark";
 import UseAuth from "../../Hooks/UseAuth";
 import { userAPI } from "../../services/api";
 
@@ -113,16 +114,14 @@ const Login = () => {
         <title>{"Signin"} | Digital Healthcare</title>
         <link rel="canonical" href="http://mysite.com/example" />
       </Helmet>
-      <div className="md:flex justify-center md:min-h-screen">
-        <div className="hero-content mt-16">
-          <div className="flex-col w-[600px]">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold">Welcome Back </h2>
-              <p className="font-base pt-2">
-                Enter Your Credentials To Access Your Account
-              </p>
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-base-200 to-base-100 dark:from-base-300 dark:to-base-200">
+        <div className="absolute right-4 top-4"><Dark /></div>
+        <div className="w-full max-w-xl px-4">
+            <div className="text-center mb-6">
+              <h2 className="text-4xl font-extrabold">Welcome Back</h2>
+              <p className="mt-1 opacity-70">Sign in to continue your healthcare journey</p>
             </div>
-            <div className="card shrink-0 w-full  shadow-2xl bg-base-100">
+            <div className="card shadow-xl bg-base-100">
               <form onSubmit={handleLogin} className="card-body">
                 <div className="form-control">
                   <label className="label">
@@ -131,18 +130,18 @@ const Login = () => {
                   <input
                     type="email"
                     name="email"
-                    placeholder="Enter Your Email"
-                    className="input input-bordered"
+                    placeholder="Enter your email"
+                    className="input input-bordered focus:input-primary"
                     required
                   />
                 </div>
                 <label className="label">
                   <span className="label-text">Password</span>
                 </label>
-                <div className="relative form-control ">
+                <div className="relative form-control">
                   <input
-                    className="input input-bordered"
-                    placeholder="Password"
+                    className="input input-bordered pr-10 focus:input-primary"
+                    placeholder="Enter your password"
                     type={showPass ? "text" : "password"}
                     name="password"
                     required
@@ -156,42 +155,40 @@ const Login = () => {
                 </div>
                 <div className="form-control mt-6">
                   <button 
-                    className={`btn bg-black text-white ${loading ? 'loading' : ''}`}
+                    className={`btn btn-primary ${loading ? 'loading' : ''}`}
                     disabled={loading}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </button>
                 </div>
               </form>
-              <div className="divider">OR</div>
-
-              <div className="flex gap-4 justify-center mb-6 ">
+              <div className="divider m-0">OR continue with</div>
+              <div className="flex gap-3 justify-center px-6 pb-6 pt-4">
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={loading}
                   className={`btn btn-outline ${loading ? 'loading' : ''}`}
                 >
-                  <FaGoogle className="text-3xl"></FaGoogle>Google
+                  <FaGoogle className="text-xl" /> Google
                 </button>
                 <button
                   onClick={handleGitHubSignIn}
                   disabled={loading}
                   className={`btn btn-outline ${loading ? 'loading' : ''}`}
                 >
-                  <FaGithub className="text-3xl"></FaGithub>Github
+                  <FaGithub className="text-xl" /> Github
                 </button>
               </div>
-              <p className="pb-6 mx-auto">
-                Do not have an Account?{" "}
-                <NavLink to="/register" className="font-semibold text-blue-600">
-                  Signup
+              <p className="pb-6 text-center">
+                Don't have an account? {""}
+                <NavLink to="/register" className="font-semibold text-primary">
+                  Sign up here
                 </NavLink>
               </p>
             </div>
-          </div>
         </div>
-        <Toaster position="top-center" reverseOrder={false} />
       </div>
+      <Toaster position="top-center" reverseOrder={false} />
     </>
   );
 };

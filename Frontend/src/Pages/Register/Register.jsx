@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet";
 import toast, { Toaster } from "react-hot-toast";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { NavLink, useNavigate } from "react-router-dom";
+import Dark from "../../Dark Mode/Dark";
 import UseAuth from "../../Hooks/UseAuth";
 import { userAPI } from "../../services/api";
 
@@ -19,9 +20,7 @@ const Register = () => {
 
     try {
       const form = new FormData(e.currentTarget);
-      const firstName = form.get("name");
-      const lastName = form.get("lastName") || "";
-      const photo = form.get("photo") || "";
+      const fullName = (form.get("name") || "").toString().trim();
       const email = form.get("email");
       const pass = form.get("password");
 
@@ -41,18 +40,24 @@ const Register = () => {
       const userCredential = await createUser(email, pass);
       const firebaseUser = userCredential.user;
 
-      // Step 2: Update Firebase profile with display name and photo
+      // Step 2: Update Firebase profile with display name
       await updateProfile(firebaseUser, {
-        displayName: `${firstName} ${lastName}`.trim(),
-        photoURL: photo,
+        displayName: fullName,
       });
+
+      // Ensure the local object has latest name prior to backend call
+      try {
+        if (!firebaseUser.displayName && fullName) {
+          firebaseUser.displayName = fullName;
+        }
+      } catch {}
 
       // Step 3: Handle user authentication with backend (will register with correct role)
       const userData = await handleUserAuth(firebaseUser);
 
-      // Step 4: If a photo is available, upsert to users collection
+      // Step 4: If a photo is available (from providers later), upsert to users collection (non-blocking)
       try {
-        const photoURL = firebaseUser?.photoURL || photo;
+        const photoURL = firebaseUser?.photoURL || firebaseUser?.providerData?.[0]?.photoURL;
         if (photoURL) {
           await userAPI.updateProfile(firebaseUser.uid, { photoURL });
         }
@@ -62,6 +67,7 @@ const Register = () => {
 
       // Success
       e.target.reset();
+      const firstName = fullName.split(" ")[0] || "";
       const welcomeMessage = userData?.role === 'doctor' 
         ? `Welcome Dr. ${firstName}! Registration successful!`
         : `Welcome ${firstName}! Registration successful!`;
@@ -90,48 +96,26 @@ const Register = () => {
         <title>{"Signup"} | Digital Healthcare</title>
         <link rel="canonical" href="http://mysite.com/example" />
       </Helmet>
-      <div className="md:flex justify-center min-h-screen">
-        <div className="hero-content mt-16">
-          <div className="flex-col md:w-[600px]">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold">Welcome To </h2>
-              <h1 className="text-5xl font-bold">
-                <span className="text-black">Digital</span>{" "}
-                <span className="text-blue-500">Healthcare</span>
-              </h1>
-              <p className="font-base pt-2">
-                Signup to access our healthcare services
-              </p>
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-base-200 to-base-100 dark:from-base-300 dark:to-base-200">
+        <div className="absolute right-4 top-4"><Dark /></div>
+        <div className="w-full max-w-xl px-4">
+            <div className="text-center mb-6">
+              <h2 className="text-4xl font-extrabold">Join Us Today</h2>
+              <p className="mt-1 opacity-70">Create your account and start caring</p>
             </div>
-            <div className="card shrink-0 md:w-full  shadow-2xl bg-base-100">
+            <div className="card md:w-full shadow-xl bg-base-100">
               <form onSubmit={handleRegister} className="card-body">
-                <div className="md:flex md:gap-6">
-                  {/*First Name */}
-                  <div className="form-control md:w-full">
-                    <label className="label">
-                      <span className="label-text">First Name</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Enter Your First Name"
-                      className="input input-bordered"
-                      required
-                    />
-                  </div>
-
-                  {/* Last Name */}
-                  <div className="form-control md:w-full">
-                    <label className="label">
-                      <span className="label-text">Last Name (Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      placeholder="Enter Your Last Name"
-                      className="input input-bordered"
-                    />
-                  </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Full Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    className="input input-bordered focus:input-primary"
+                    required
+                  />
                 </div>
 
                 <div className="form-control">
@@ -141,31 +125,19 @@ const Register = () => {
                   <input
                     type="email"
                     name="email"
-                    placeholder="Enter Your Email"
-                    className="input input-bordered"
+                    placeholder="Enter your email"
+                    className="input input-bordered focus:input-primary"
                     required
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Profile Photo URL (Optional)</span>
-                  </label>
-                  <input
-                    type="url"
-                    name="photo"
-                    placeholder="https://example.com/photo.jpg"
-                    className="input input-bordered"
                   />
                 </div>
 
                 <label className="label">
                   <span className="label-text">Password</span>
                 </label>
-                <div className="relative form-control ">
+                <div className="relative form-control">
                   <input
-                    className="input input-bordered"
-                    placeholder="Password"
+                    className="input input-bordered pr-10 focus:input-primary"
+                    placeholder="Create a strong password"
                     type={showPass ? "text" : "password"}
                     name="password"
                     required
@@ -177,26 +149,26 @@ const Register = () => {
                     {showPass ? <FaRegEye /> : <FaRegEyeSlash />}
                   </p>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters with uppercase and lowercase letters</p>
                 <div className="form-control mt-6">
                   <button 
-                    className={`btn bg-black text-white ${loading ? 'loading' : ''}`}
+                    className={`btn btn-primary ${loading ? 'loading' : ''}`}
                     disabled={loading}
                   >
-                    {loading ? 'Creating Account...' : 'Sign Up'}
+                    {loading ? 'Creating Account...' : 'Create Account'}
                   </button>
                 </div>
               </form>
               <div className="divider">OR</div>
 
-              <p className="pb-6 mx-auto">
-                Already Have an Account?{" "}
-                <NavLink to="/login" className="font-semibold text-blue-600">
-                  SignIn
+              <p className="pb-6 text-center">
+                Already have an account?{" "}
+                <NavLink to="/login" className="font-semibold text-primary">
+                  Sign in here
                 </NavLink>
               </p>
             </div>
           </div>
-        </div>
         <Toaster position="top-center" reverseOrder={false} />
       </div>
     </>

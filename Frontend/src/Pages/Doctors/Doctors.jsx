@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet";
 import { doctorAPI } from "../../services/api";
 import AppointmentForm from "./AppointmentForm";
 import DoctorCard from "./DoctorCard";
-import { Helmet } from "react-helmet";
 
 const Doctors = () => {
   console.log("Doctors component is rendering!");
