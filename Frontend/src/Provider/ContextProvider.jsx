@@ -14,6 +14,7 @@ import { userAPI } from "../services/api";
 
 export const AuthContext = createContext(null);
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 const gitHubProvider = new GithubAuthProvider();
 
 // Doctor email list for role detection

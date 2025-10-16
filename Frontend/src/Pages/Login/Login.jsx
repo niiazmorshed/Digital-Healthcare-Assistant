@@ -82,7 +82,14 @@ const Login = () => {
       navigate(location?.state ? location.state : "/");
     } catch (error) {
       console.error("Google sign-in error:", error);
-      toast.error("Google sign-in failed. Please try again.", { id: "oauth" });
+      const msg = error?.code === 'auth/popup-closed-by-user'
+        ? 'Google sign-in popup closed.'
+        : error?.code === 'auth/popup-blocked'
+        ? 'Popup was blocked. Please allow popups for this site.'
+        : error?.code === 'auth/unauthorized-domain'
+        ? 'Unauthorized domain in Firebase. Add your domain in Firebase console.'
+        : error?.message || 'Google sign-in failed. Please try again.';
+      toast.error(msg, { id: "oauth" });
     } finally {
       setLoading(false);
     }
