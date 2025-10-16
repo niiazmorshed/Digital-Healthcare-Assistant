@@ -1,8 +1,74 @@
 # 🏥 Digital Healthcare Assistant
 
-A comprehensive healthcare management system built with React, Firebase, and Node.js that connects patients with doctors through an intuitive appointment booking and management platform.
+> A full-stack healthcare management platform connecting patients and doctors with a streamlined appointment, approval, queue, and prescription workflow.
 
-## 🌟 Features
+<div align="center">
+
+👤 **[Developer](https://github.com/niiazmorshed)**
+
+</div>
+
+<div align="center">
+
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+</div>
+
+## 🧪 Testing Credentials
+
+<div align="center">
+
+### 🎯 Quick Start - Use These Accounts to Test the Platform
+
+</div>
+
+| Role          | Email                  | Password | Access                          |
+| ------------- | ---------------------- | -------- | ------------------------------- |
+| 🩺 **Doctor** | `fahim@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| 🩺 **Doctor** | `sakib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| 🩺 **Doctor** | `samia@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| 🩺 **Doctor** | `labib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+
+> Regular users who sign in (including Google) are Patients by default. Doctor accounts are manually provisioned in the database and cannot be self-registered.
+
+---
+
+## 📋 Table of Contents
+
+- [About](#-about)
+- [Key Features](#-key-features)
+- [Authentication & Roles](#-authentication--roles)
+- [Appointment & Queue Flow](#-appointment-and-queue-flow)
+- [Project Structure](#-project-structure)
+- [Installation & Setup](#-installation--setup)
+- [Environment Variables](#-environment-variables)
+- [API Integration](#-api-integration)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Authors](#-authors)
+
+---
+
+## 🌟 About
+
+**Digital Healthcare Assistant** is a modern healthcare platform built with the MERN stack and Firebase Authentication. Patients can book appointments in fixed capacity slots, doctors can approve requests which moves patients into a live queue, and prescriptions are generated and visible in patient dashboards.
+
+### ⚡ Quick Summary
+
+- Role-based access: Patients (default), Doctors (manually provisioned), Admin
+- Appointment slots with capacity limit (max 4 patients per slot)
+- Doctor approval moves patients into the real-time queue
+- Prescription generation and viewing for completed appointments
+
+---
+
+## 🌟 Key Features
 
 ### 👥 Multi-Role System
 
@@ -39,6 +105,8 @@ A comprehensive healthcare management system built with React, Firebase, and Nod
 - **API Integration**: RESTful API integration with axios
 - **Form Validation**: Comprehensive form validation and error handling
 
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -65,7 +133,9 @@ A comprehensive healthcare management system built with React, Firebase, and Nod
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixing
 
-## 🚀 Getting Started
+---
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
 
@@ -74,44 +144,60 @@ A comprehensive healthcare management system built with React, Firebase, and Nod
 - Firebase project setup
 - Backend API server running
 
-### Installation
+### 1) Clone the repository
 
-1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/digital-healthcare-assistant.git
+cd digital-healthcare-assistant
+```
 
-   ```bash
-   git clone https://github.com/yourusername/digital-healthcare-assistant.git
-   cd digital-healthcare-assistant
-   ```
+### 2) Frontend setup
 
-2. **Install dependencies**
+```bash
+cd Frontend
+npm install
+```
 
-   ```bash
-   npm install
-   ```
+Create `Frontend/.env`:
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory:
+```env
+VITE_API_URL=http://localhost:5000
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+```
 
-   ```env
-   VITE_API_URL=http://localhost:5000
-   VITE_FIREBASE_API_KEY=your_firebase_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-   VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
-   VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-   VITE_FIREBASE_APP_ID=your_firebase_app_id
-   ```
+Run the dev server:
 
-4. **Start development server**
+```bash
+npm run dev
+```
 
-   ```bash
-   npm run dev
-   ```
+### 3) Backend setup
 
-5. **Build for production**
-   ```bash
-   npm run build
-   ```
+```bash
+cd ../Backend
+npm install
+```
+
+Create `Backend/.env` (example):
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+ACCESS_TOKEN_SECRET=your_jwt_secret
+PORT=5000
+```
+
+Start the API server:
+
+```bash
+npm start
+```
+
+---
 
 ## 📁 Project Structure
 
@@ -141,7 +227,9 @@ src/
 └── assets/                        # Static assets
 ```
 
-## 🔐 Authentication
+---
+
+## 🔐 Authentication & Roles
 
 The application uses Firebase Authentication with multiple sign-in methods:
 
@@ -150,6 +238,25 @@ The application uses Firebase Authentication with multiple sign-in methods:
 - GitHub OAuth
 
 Users are automatically redirected to their appropriate dashboard based on their role (patient, doctor, or admin).
+
+### Role Provisioning and Access Control
+
+- New users who sign up or log in with Google are assigned the **Patient** role by default.
+- **Doctor** accounts are manually provisioned in the database and cannot be self-registered.
+- Only provisioned doctors can access the doctor dashboard and approve appointments.
+
+### Demo Doctor Accounts
+
+Use the following doctor accounts for QA and demos:
+
+- `fahim@healthcare.com`
+- `sakib@healthcare.com`
+- `samia@healthcare.com`
+- `labib@healthcare.com`
+
+Password for all: `1234Aa`
+
+> Note: These accounts are provisioned in the database. Regular users cannot become doctors unless manually added by an admin/developer.
 
 ## 📱 Key Components
 
@@ -174,6 +281,21 @@ Users are automatically redirected to their appropriate dashboard based on their
 - **Booking Form**: Comprehensive appointment booking with validation
 - **Confirmation**: Immediate booking confirmation and status updates
 
+### Appointment and Queue Flow
+
+1. Patients can book an available time slot with a doctor.
+2. Each time slot supports up to **4 patients maximum**.
+3. Bookings remain pending until the doctor reviews them.
+4. When a doctor approves an appointment, the patient is moved into the **active queue** for that session.
+5. Doctors can write and attach **prescriptions** to completed appointments.
+6. Patients can view their prescriptions in their **Patient Dashboard**.
+
+```
+PATIENT → Book slot (capacity ≤ 4) → Pending
+              ↓ (Doctor approves)
+          Queue position assigned → Visit/Complete → Prescription available
+```
+
 ## 🎨 UI/UX Features
 
 - **Responsive Design**: Mobile-first approach with responsive layouts
@@ -192,6 +314,8 @@ The application implements a sophisticated queue management system:
 - **Real-time Updates**: Dynamic queue updates as appointments are processed
 - **Status Tracking**: Current, next, and estimated time indicators
 
+---
+
 ## 📊 API Integration
 
 The frontend integrates with a comprehensive RESTful API:
@@ -201,6 +325,8 @@ The frontend integrates with a comprehensive RESTful API:
 - **Doctor Management**: Doctor profiles and availability
 - **Prescription System**: Prescription creation and management
 - **Queue Management**: Real-time queue status and updates
+
+---
 
 ## 🚀 Deployment
 
@@ -220,6 +346,8 @@ The application can be deployed to any static hosting platform:
 - GitHub Pages
 - AWS S3
 
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -228,13 +356,17 @@ The application can be deployed to any static hosting platform:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+---
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## 👨‍💻 Authors
 
-- **Niaz Morshed** -(https://github.com/niiazmorshed)
+- **Niaz Morshed** - [@niiazmorshed](https://github.com/niiazmorshed)
 
 ## 🙏 Acknowledgments
 
