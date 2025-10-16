@@ -5,7 +5,18 @@ const app = express();
 
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://digital-healthcare-assistant.vercel.app",
+      "https://digital-healthcare-assistant.vercel.app/",
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -24,20 +35,41 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    process.exit(1);
   }
 }
 run().catch(console.dir);
 app.get("/", (req, res) => {
   res.send("Healthcare API Running Successfully!");
+});
+
+// Health check endpoint
+app.get("/health", async (req, res) => {
+  try {
+    // Check database connection
+    await client.db("admin").command({ ping: 1 });
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      database: "connected",
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      database: "disconnected",
+      error: error.message
+    });
+  }
 });
 
 // Simple endpoint to get all doctors (alternative to /api/doctors)
@@ -529,12 +561,14 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
     }
     
     // Check queue capacity for this time slot (count all active statuses)
-    const activeStatuses = ['approved', 'pending', 'confirmed'];
+    // Exclude the current appointment being approved from the count
+    const activeStatuses = ['pending_request', 'approved', 'pending', 'confirmed'];
     const currentCount = await appointmentsCollection.countDocuments({
       doctorEmail: appointmentRequest.doctorEmail,
       appointmentDate: appointmentRequest.appointmentDate,
       appointmentTime: appointmentRequest.appointmentTime,
-      status: { $in: activeStatuses }
+      status: { $in: activeStatuses },
+      _id: { $ne: new ObjectId(appointmentId) } // Exclude the current appointment being approved
     });
     
     if (currentCount >= 4) {
@@ -554,23 +588,6 @@ app.put("/api/appointments/:appointmentId/approve", async (req, res) => {
     
     // Assign the next serial number
     const serialNumber = approvedCount + 1;
-    
-    console.log(`📋 Approving appointment for ${appointmentRequest.patientName}`);
-    console.log(`🔢 Current approved count: ${approvedCount}, New serial number: ${serialNumber}`);
-    console.log(`📍 Slot details: ${appointmentRequest.doctorEmail} on ${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`);
-    
-    // Debug: Show all approved appointments for this slot
-    const approvedAppointments = await appointmentsCollection.find({
-      doctorEmail: appointmentRequest.doctorEmail,
-      appointmentDate: appointmentRequest.appointmentDate,
-      appointmentTime: appointmentRequest.appointmentTime,
-      status: 'approved'
-    }).toArray();
-    
-    console.log(`📊 Current approved appointments in this slot:`, approvedAppointments.length);
-    approvedAppointments.forEach(apt => {
-      console.log(`  - ${apt.patientName}: Serial ${apt.serialNumber}`);
-    });
     
     // Update the appointment status and assign serial number
     await appointmentsCollection.updateOne(
@@ -727,10 +744,7 @@ app.get("/api/appointments/doctor/:doctorEmail", async (req, res) => {
     }).sort({ appointmentDate: 1, appointmentTime: 1, serialNumber: 1 }).toArray();
     
     // Debug: Log the appointments being returned
-    console.log(`🔍 Doctor ${doctorEmail} appointments:`, appointments.length);
-    appointments.forEach(apt => {
-      console.log(`  - ${apt.patientName}: ${apt.status}, Serial: ${apt.serialNumber}, Date: ${apt.appointmentDate}, Time: ${apt.appointmentTime}`);
-    });
+
     
     res.status(200).json({
       success: true,
@@ -970,8 +984,11 @@ app.get("/api/appointments/available-slots", async (req, res) => {
     const query = {
       doctorEmail: doctorEmail.toLowerCase(),
       appointmentDate,
-      status: { $in: ["pending", "confirmed", "approved"] } // Count all active statuses
+      status: { $in: ["pending_request", "pending", "confirmed", "approved"] } // Count all active statuses including pending requests
     };
+
+    // Debug: Log the query being used
+
 
     // If excluding an appointment (for rescheduling), remove it from count
     if (excludeAppointmentId) {
@@ -1033,8 +1050,6 @@ app.get("/api/patients/:doctorEmail", async (req, res) => {
       });
     }
     
-    console.log('🔍 Fetching patients for doctor:', doctorEmail.toLowerCase());
-    
     // Find patients who have prescriptions or appointments with this doctor
     const completedPatients = await patientsCollection.find({
       $or: [
@@ -1042,16 +1057,6 @@ app.get("/api/patients/:doctorEmail", async (req, res) => {
         { "appointments.doctorEmail": doctorEmail.toLowerCase() }
       ]
     }).sort({ lastVisit: -1 }).toArray();
-    
-    console.log('📊 Found patients:', completedPatients.length);
-    if (completedPatients.length > 0) {
-      console.log('🔍 Sample patient data:', {
-        email: completedPatients[0].email,
-        name: completedPatients[0].name,
-        prescriptionsCount: completedPatients[0].prescriptions?.length || 0,
-        appointmentsCount: completedPatients[0].appointments?.length || 0
-      });
-    }
     
     res.status(200).json({
       success: true,
@@ -1213,7 +1218,7 @@ app.get("/api/appointments/:appointmentId/debug", async (req, res) => {
       });
     }
     
-    console.log('🔍 Debug - Full appointment data:', JSON.stringify(appointment, null, 2));
+
     
     res.status(200).json({
       success: true,
@@ -1247,8 +1252,6 @@ app.get("/api/debug/patients", async (req, res) => {
     
     const allPatients = await patientsCollection.find({}).toArray();
     
-    console.log('🔍 Debug - All patients in collection:', allPatients.length);
-    
     const samplePatients = allPatients.slice(0, 3).map(patient => ({
       email: patient.email,
       name: patient.name,
@@ -1263,8 +1266,6 @@ app.get("/api/debug/patients", async (req, res) => {
         status: a.status
       })) || []
     }));
-    
-    console.log('🔍 Sample patients structure:', samplePatients);
     
     res.status(200).json({
       success: true,
@@ -1337,8 +1338,7 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
     const { patientEmail } = req.params;
     const prescriptionData = req.body;
     
-    console.log('📝 Adding prescription to patient:', patientEmail);
-    console.log('💊 Prescription data:', prescriptionData);
+
     
     const database = client.db("HealthcareDB");
     const patientsCollection = database.collection("patients");
@@ -1348,7 +1348,7 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
     let patient = await patientsCollection.findOne({ email: patientEmail });
     
     if (!patient) {
-      console.log('🆕 Patient not found, creating new patient record');
+
       
       // Get doctor name if available
       let doctorName = 'Unknown Doctor';
@@ -1376,7 +1376,7 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
       
       const result = await patientsCollection.insertOne(newPatient);
       patient = { ...newPatient, _id: result.insertedId };
-      console.log('🆕 Created new patient record');
+
     }
     
     // Add prescription to patient
@@ -1395,7 +1395,7 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
       prescribedAt: prescriptionData.prescribedAt || new Date()
     };
     
-    console.log('💊 New prescription to add:', newPrescription);
+
     
     // Update patient with new prescription
     const updateResult = await patientsCollection.updateOne(
@@ -1436,14 +1436,14 @@ app.put("/api/patients/:patientEmail/prescription", async (req, res) => {
             }
           }
         );
-        console.log('📅 Added appointment to patient history');
+
       }
     }
     
     // Get updated patient data
     const updatedPatient = await patientsCollection.findOne({ email: patientEmail });
     
-    console.log('✅ Prescription added to patient successfully');
+
     
     res.status(200).json({
       success: true,
