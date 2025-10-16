@@ -381,4 +381,4 @@ If you have any questions or need support, please open an issue on GitHub or con
 
 ---
 
-**Built with ❤️ for better healthcare management by Niaz Morshed and Yasha Ehtesham**
+**Built with ❤️ for better healthcare management by Niaz Morshed**
