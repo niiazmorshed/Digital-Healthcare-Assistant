@@ -4,7 +4,6 @@ require("dotenv").config();
 const app = express();
 
 const port = process.env.PORT || 5000;
-
 app.use(
   cors({
     origin: [
@@ -67,6 +66,55 @@ app.get("/health", async (req, res) => {
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       database: "disconnected",
+      error: error.message
+    });
+  }
+});
+
+// Fix existing users with "User" displayName
+app.post("/api/users/fix-displaynames", async (req, res) => {
+  try {
+    const database = client.db("HealthcareDB");
+    const usersCollection = database.collection("users");
+    
+    // Find all users with "User" as displayName
+    const usersWithBadNames = await usersCollection.find({
+      $or: [
+        { displayName: { $regex: /^user$/i } },
+        { displayName: "" },
+        { displayName: null }
+      ]
+    }).toArray();
+    
+    let fixedCount = 0;
+    
+    for (const user of usersWithBadNames) {
+      const emailName = user.email.split('@')[0];
+      const properDisplayName = emailName
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      await usersCollection.updateOne(
+        { _id: user._id },
+        { $set: { displayName: properDisplayName } }
+      );
+      
+      fixedCount++;
+      console.log(`Fixed displayName for ${user.email}: "${user.displayName}" -> "${properDisplayName}"`);
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Fixed ${fixedCount} user displayNames`,
+      data: { fixedCount, totalFound: usersWithBadNames.length }
+    });
+  } catch (error) {
+    console.error("Error fixing displayNames:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fix displayNames",
       error: error.message
     });
   }
@@ -180,12 +228,36 @@ app.post("/api/users/register", async (req, res) => {
   try {
     const { uid, email, role, displayName, photoURL } = req.body;
     
+    // Debug logging to help identify the issue
+    console.log("Registration request body:", {
+      uid,
+      email,
+      role,
+      displayName,
+      photoURL
+    });
+    
     // Validate required fields
-    if (!uid || !email || !displayName) {
+    if (!uid || !email) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required: uid, email, displayName"
+        message: "UID and email are required"
       });
+    }
+    
+    // Handle displayName - if not provided or is default "User", extract from email
+    let finalDisplayName = displayName;
+    if (!displayName || displayName.toLowerCase() === 'user' || displayName.trim() === '') {
+      // Extract name from email (part before @)
+      const emailName = email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      finalDisplayName = emailName
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      console.log(`DisplayName was "${displayName}", using "${finalDisplayName}" from email`);
     }
     
     // List of doctor emails
@@ -237,7 +309,7 @@ app.post("/api/users/register", async (req, res) => {
       uid,
       email,
       role: userRole,
-      displayName,
+      displayName: finalDisplayName,
       createdAt: new Date()
     };
     if (photoURL) {
@@ -315,6 +387,24 @@ app.post("/api/users/login", async (req, res) => {
         { $set: { photoURL } }
       );
       user = await usersCollection.findOne({ uid });
+    }
+    
+    // Fix displayName if it's "User" or empty
+    if (!user.displayName || user.displayName.toLowerCase() === 'user' || user.displayName.trim() === '') {
+      const emailName = user.email.split('@')[0];
+      const properDisplayName = emailName
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      await usersCollection.updateOne(
+        { uid },
+        { $set: { displayName: properDisplayName } }
+      );
+      user.displayName = properDisplayName;
+      
+      console.log(`Updated displayName from "${user.displayName}" to "${properDisplayName}" for user ${user.email}`);
     }
     
     res.status(200).json({
