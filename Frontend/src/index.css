@@ -7,11 +7,26 @@ body {
   background: #ffffff;
   color: #1a202c;
   transition: background-color 0.3s ease, color 0.3s ease;
+  padding-top: 0;
 }
 
 [data-theme="dark"] body {
   background: #1a202c;
   color: #e2e8f0;
+}
+
+/* Spacer for fixed navbar */
+.navbar-spacer {
+  height: 4rem;
+  background: transparent;
+}
+
+[data-theme="light"] .navbar-spacer {
+  background: #ffffff;
+}
+
+[data-theme="dark"] .navbar-spacer {
+  background: #1a202c;
 }
 
 /* Navbar Dark Mode - Global override */
@@ -521,18 +536,19 @@ body:not([data-theme="dark"]) div.navbar[class*="bg-gray"] {
 
 /* Hero Banner Section */
 .hero-banner {
-  background-image: linear-gradient(rgba(102, 126, 234, 0.7), rgba(118, 75, 162, 0.7)),
-    url("https://i.ibb.co.com/Vn3WQzZ/erik-mclean-4-Ja-WGHzlwvk-unsplash.jpg");
+  background-image: url("https://i.ibb.co.com/Vn3WQzZ/erik-mclean-4-Ja-WGHzlwvk-unsplash.jpg");
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: scroll;
   min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 10rem 2rem 6rem;
-  margin: 0;
+  margin: 1rem 1rem 0;
   position: relative;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .hero-content {
@@ -746,21 +762,29 @@ body:not([data-theme="dark"]) div.navbar[class*="bg-gray"] {
 /* CTA Section */
 .cta-section {
   padding: 5rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: transparent;
   text-align: center;
 }
 
 .cta-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: white;
+  color: #2d3748;
   margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .cta-title {
+  color: #e2e8f0;
 }
 
 .cta-text {
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #718096;
   margin-bottom: 2.5rem;
+}
+
+[data-theme="dark"] .cta-text {
+  color: #a0aec0;
 }
 
 .cta-buttons {
@@ -777,28 +801,38 @@ body:not([data-theme="dark"]) div.navbar[class*="bg-gray"] {
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid white;
 }
 
 .cta-button.primary {
-  background: white;
-  color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 2px solid transparent;
 }
 
 .cta-button.primary:hover {
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
 }
 
 .cta-button.secondary {
   background: transparent;
-  color: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+[data-theme="dark"] .cta-button.secondary {
+  color: #60a5fa;
+  border-color: #60a5fa;
 }
 
 .cta-button.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(102, 126, 234, 0.1);
   transform: translateY(-3px);
+}
+
+[data-theme="dark"] .cta-button.secondary:hover {
+  background: rgba(96, 165, 250, 0.1);
 }
 
 /* Responsive Design */
@@ -806,7 +840,9 @@ body:not([data-theme="dark"]) div.navbar[class*="bg-gray"] {
   .hero-banner {
     min-height: 70vh;
     padding: 8rem 1.5rem 4rem;
+    margin: 1rem 0.5rem 0;
     background-attachment: scroll;
+    border-radius: 15px;
   }
 
   .hero-content {

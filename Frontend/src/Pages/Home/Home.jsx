@@ -13,6 +13,7 @@ const Home = () => {
         <link rel="canonical" href="http://mysite.com/example" />
       </Helmet>
       <Navbar />
+      <div className="navbar-spacer"></div>
       <Bannner />
       
       {/* Features Section */}
