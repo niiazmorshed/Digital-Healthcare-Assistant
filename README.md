@@ -1,65 +1,46 @@
-# 🏥 Digital Healthcare Assistant
+# Digital Healthcare Assistant
 
-> A full-stack healthcare management platform connecting patients and doctors with a streamlined appointment, approval, queue, and prescription workflow.
+A full-stack healthcare management platform connecting patients and doctors with a streamlined appointment, approval, queue, and prescription workflow.
 
-<div align="center">
+**Developer:** [niiazmorshed](https://github.com/niiazmorshed)
 
-👤 **[Developer](https://github.com/niiazmorshed)**
+## Testing Credentials
 
-</div>
+### Quick Start - Use These Accounts to Test the Platform
 
-<div align="center">
-
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-
-</div>
-
-## 🧪 Testing Credentials
-
-<div align="center">
-
-### 🎯 Quick Start - Use These Accounts to Test the Platform
-
-</div>
-
-| Role          | Email                  | Password | Access                          |
-| ------------- | ---------------------- | -------- | ------------------------------- |
-| 🩺 **Doctor** | `fahim@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
-| 🩺 **Doctor** | `sakib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
-| 🩺 **Doctor** | `samia@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
-| 🩺 **Doctor** | `labib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| Role       | Email                  | Password | Access                          |
+| ---------- | ---------------------- | -------- | ------------------------------- |
+| **Doctor** | `fahim@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| **Doctor** | `sakib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| **Doctor** | `samia@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
+| **Doctor** | `labib@healthcare.com` | `1234Aa` | Approve appointments, prescribe |
 
 > Regular users who sign in (including Google) are Patients by default. Doctor accounts are manually provisioned in the database and cannot be self-registered.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [About](#-about)
-- [Key Features](#-key-features)
-- [Authentication & Roles](#-authentication--roles)
-- [Appointment & Queue Flow](#-appointment-and-queue-flow)
-- [Project Structure](#-project-structure)
-- [Installation & Setup](#-installation--setup)
-- [Environment Variables](#-environment-variables)
-- [API Integration](#-api-integration)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Authors](#-authors)
+- [About](#about)
+- [Key Features](#key-features)
+- [Authentication & Roles](#authentication--roles)
+- [Appointment & Queue Flow](#appointment-and-queue-flow)
+- [Project Structure](#project-structure)
+- [Installation & Setup](#installation--setup)
+- [Environment Variables](#environment-variables)
+- [API Integration](#api-integration)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Authors](#authors)
 
 ---
 
-## 🌟 About
+## About
 
 **Digital Healthcare Assistant** is a modern healthcare platform built with the MERN stack and Firebase Authentication. Patients can book appointments in fixed capacity slots, doctors can approve requests which moves patients into a live queue, and prescriptions are generated and visible in patient dashboards.
 
-### ⚡ Quick Summary
+### Quick Summary
 
 - Role-based access: Patients (default), Doctors (manually provisioned), Admin
 - Appointment slots with capacity limit (max 4 patients per slot)
@@ -68,15 +49,15 @@
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 👥 Multi-Role System
+### Multi-Role System
 
 - **Patient Dashboard**: Book appointments, view queue status, manage prescriptions
 - **Doctor Dashboard**: Manage appointments, approve/reject requests, write prescriptions
 - **Admin Panel**: System-wide management and oversight
 
-### 🎯 Core Functionality
+### Core Functionality
 
 #### For Patients
 
@@ -95,7 +76,7 @@
 - **Patient Records**: Access patient history and completed appointments
 - **Status Updates**: Mark appointments as completed, cancelled, or in-progress
 
-### 🔧 Technical Features
+### Technical Features
 
 - **Real-time Queue System**: Dynamic queue management with 15-minute time slots
 - **Serial Number Assignment**: Automatic serial number assignment based on booking order
@@ -107,7 +88,7 @@
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -135,7 +116,7 @@
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -147,7 +128,7 @@
 ### 1) Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/digital-healthcare-assistant.git
+git clone https://github.com/niiazmorshed/digital-healthcare-assistant.git
 cd digital-healthcare-assistant
 ```
 
@@ -199,7 +180,7 @@ npm start
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -229,7 +210,7 @@ src/
 
 ---
 
-## 🔐 Authentication & Roles
+## Authentication & Roles
 
 The application uses Firebase Authentication with multiple sign-in methods:
 
@@ -258,7 +239,7 @@ Password for all: `1234Aa`
 
 > Note: These accounts are provisioned in the database. Regular users cannot become doctors unless manually added by an admin/developer.
 
-## 📱 Key Components
+## Key Components
 
 ### Patient Dashboard
 
@@ -296,7 +277,7 @@ PATIENT → Book slot (capacity ≤ 4) → Pending
           Queue position assigned → Visit/Complete → Prescription available
 ```
 
-## 🎨 UI/UX Features
+## UI/UX Features
 
 - **Responsive Design**: Mobile-first approach with responsive layouts
 - **Modern UI**: Clean, professional design using Tailwind CSS and DaisyUI
@@ -305,7 +286,7 @@ PATIENT → Book slot (capacity ≤ 4) → Pending
 - **Error Handling**: Comprehensive error handling with user-friendly messages
 - **Form Validation**: Real-time form validation with helpful error messages
 
-## 🔄 Queue Management System
+## Queue Management System
 
 The application implements a sophisticated queue management system:
 
@@ -316,7 +297,7 @@ The application implements a sophisticated queue management system:
 
 ---
 
-## 📊 API Integration
+## API Integration
 
 The frontend integrates with a comprehensive RESTful API:
 
@@ -328,7 +309,7 @@ The frontend integrates with a comprehensive RESTful API:
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Firebase Hosting
 
@@ -348,7 +329,7 @@ The application can be deployed to any static hosting platform:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -358,27 +339,23 @@ The application can be deployed to any static hosting platform:
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👨‍💻 Authors
+## Authors
 
 - **Niaz Morshed** - [@niiazmorshed](https://github.com/niiazmorshed)
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Firebase for authentication and hosting
 - Tailwind CSS and DaisyUI for the beautiful UI components
 - React community for the excellent ecosystem
 - All contributors who helped improve this project
 
-## 📞 Support
+## Support
 
-If you have any questions or need support, please open an issue on GitHub or contact the development team.
-
----
-
-**Built with ❤️ for better healthcare management by Niaz Morshed**
+If you have any questions or need support, please open an issue on GitHub or contact the through email.
